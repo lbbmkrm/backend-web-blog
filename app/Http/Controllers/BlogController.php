@@ -44,7 +44,7 @@ class BlogController extends Controller
     }
     public function getSingleBlog(int $blogId)
     {
-        $blog = Blog::with(['user', 'category'])->find($blogId);
+        $blog = Blog::with(['user', 'category', 'comments'])->find($blogId);
         if (!$blog) {
             return response()->json([
                 'message' => 'Blog not found',
@@ -152,7 +152,7 @@ class BlogController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Blog delete to failed',
+                'message' => 'Blog failed to delete',
             ]);
         }
     }

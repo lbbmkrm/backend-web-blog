@@ -2,9 +2,10 @@
 
 namespace App\Http\Resources\Blogs;
 
+use App\Http\Resources\CommentResource;
 use Illuminate\Http\Request;
-use App\Http\Resources\UserResource;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\User\UserSimpleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BlogResource extends JsonResource
@@ -19,13 +20,15 @@ class BlogResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'author' => new UserResource($this->whenLoaded('user')),
+            'author' => new UserSimpleResource($this->whenLoaded('user')),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'content' => $this->content,
             'description' => $this->description,
             'thumbnail' => $this->thumbnail,
             'createdAt' => $this->created_at,
-            'updatedAt' => $this->updated_at
+            'updatedAt' => $this->updated_at,
+            'comments' =>  CommentResource::collection(($this->whenLoaded('comments'))),
+            'likesCount' => $this->likes()->count()
         ];
     }
 }

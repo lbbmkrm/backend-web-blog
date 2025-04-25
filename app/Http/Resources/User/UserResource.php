@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources\Blogs;
+namespace App\Http\Resources\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class BlogsResource extends JsonResource
+class UserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,10 +16,10 @@ class BlogsResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description,
-            'slug' => $this->slug,
-            'thumbnail' => $this->thumbnail,
+            'name' => $this->name,
+            'email' => $this->email,
+            'image' => $this->img ? asset('storage/' . $this->img) : null,
+            'bio' => $this->bio,
             'createdAt' => $this->created_at
         ];
     }

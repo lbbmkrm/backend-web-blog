@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Blogs\BlogResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class UserResource extends JsonResource
+class CommentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,11 +16,8 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'image' => $this->img ? asset('storage/' . $this->img) : null,
-            'bio' => $this->bio,
+            'user' => $this->user->name,
+            'content' => $this->content,
             'createdAt' => $this->created_at
         ];
     }
