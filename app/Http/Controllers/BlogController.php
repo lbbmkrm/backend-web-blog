@@ -2,19 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Blog;
-use App\Models\Category;
+use App\Services\BlogService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Blogs\StoreBlogRequest;
 use App\Http\Requests\Blogs\UpdateBlogRequest;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\Blogs\BlogResource;
 use App\Http\Resources\Blogs\BlogsResource;
+use App\Repositories\CategoryRepository;
 use Exception;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @method void authorize(string $ability, mixed $arguments)
@@ -22,9 +18,17 @@ use Illuminate\Support\Facades\Storage;
 class BlogController extends Controller
 {
     use AuthorizesRequests;
+    private $categoryRepo;
+    private $blogService;
+
+    public function __construct(BlogService $blogService, CategoryRepository $categoryRepository)
+    {
+        $this->categoryRepo = $categoryRepository;
+        $this->blogService = $blogService;
+    }
     public function getCategories()
     {
-        $categories = Category::all();
+        $categories = $this->categoryRepo->getAll();
 
         if ($categories->isEmpty()) {
             return response()->json([
@@ -38,122 +42,75 @@ class BlogController extends Controller
 
     public function getAllBlogs()
     {
-        $blogs = Blog::all();
+        $blogs = $this->blogService->getAllBlogs();
 
         return BlogsResource::collection($blogs);
     }
     public function getSingleBlog(int $blogId)
     {
-        $blog = Blog::with(['user', 'category', 'comments'])->find($blogId);
-        if (!$blog) {
+        try {
+            $blog = $this->blogService->getSingleBlog($blogId);
+            return new BlogResource($blog);
+        } catch (Exception $e) {
             return response()->json([
-                'message' => 'Blog not found',
-            ], 404);
+                'message' => $e->getMessage()
+            ], $e->getCode());
         }
-
-        return new BlogResource($blog);
     }
 
     public function blogCreate(StoreBlogRequest $request)
     {
-        $validated = $request->validated();
-
-        $thumbnail = '';
         try {
-            DB::beginTransaction();
-
-            if ($request->hasFile('thumbnail')) {
-                $thumbnail = $request->file('thumbnail')->store('thumbnails', 'public');
-            }
-
-            $slug = Str::slug($validated['title']);
-            $user = Auth::user();
-
-            $blog = Blog::create([
-                'user_id' => $user->id,
-                'category_id' => $validated['category_id'],
-                'title' => $validated['title'],
-                'content' => $validated['content'],
-                'description' => $validated['description'],
-                'slug' => $slug,
-                'thumbnail' => $thumbnail,
-                'created_at' => now()
-            ]);
-
-            DB::commit();
+            $validated = $request->validated();
+            $imgPath = $request->file('thumbnail');
+            $blog = $this->blogService->createBlog($validated, $imgPath);
 
             return response()->json([
                 'message' => 'Blog created successfully',
-                'data' => new BlogResource($blog->load(['user', 'category']))
-            ], 201);
+                'data' => new BlogResource($blog->load(['user', 'category'], 201))
+            ]);
         } catch (Exception $e) {
-            DB::rollBack();
             return response()->json([
-                'message' => 'Blog failed to create',
-            ], 500);
+                'message' => $e->getMessage(),
+            ], $e->getCode());
         }
     }
 
 
     public function blogUpdate(UpdateBlogRequest $request, int $blogId)
     {
-        $blog = Blog::find($blogId);
-        if (!$blog) {
+        try {
+            $blog = $this->blogService->getSingleBlog($blogId);
+            $this->authorize('update', $blog);
+            $validated = $request->validated();
+            $thumbnail = $request->file('thumbnail');
+            $updatedBlog = $this->blogService->updateBlog($blog->id, $validated, $thumbnail);
             return response()->json([
-                'message' => 'Blog not found',
-            ], 404);
+                'message' => 'Blog updated successfully',
+                'data' => new BlogResource($updatedBlog)
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Blog failed to update'
+            ], $e->getCode());
         }
-        $this->authorize('update', $blog);
-
-        $validated = $request->validated();
-
-        if ($request->hasFile('thumbnail')) {
-            if ($blog->thumbnail) {
-                Storage::disk('public')->delete($blog->thumbnail);
-            }
-            $validated['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
-        }
-
-        $blog->category_id = $validated['category_id'];
-        $blog->title = $validated['title'];
-        $blog->content = $validated['content'];
-        $blog->description = $validated['description'];
-        $blog->thumbnail = $validated['thumbnail'];
-        $blog->updated_at = now();
-
-        $blog->save();
-
-        return response()->json([
-            'message' => 'Blog updated successfully',
-            'blog' => new BlogResource($blog)
-        ]);
     }
 
     public function blogDelete(int $blogId)
     {
-        $blog = Blog::find($blogId);
-        if (!$blog) {
-            return response()->json([
-                'message' => 'Blog not found',
-            ], 404);
-        }
-
         try {
+            $blog = $this->blogService->getSingleBlog($blogId);
             $this->authorize('delete', $blog);
 
-            if ($blog->thumbnail) {
-                Storage::disk('public')->delete($blog->thumbnail);
-            }
-            $blog->delete();
+            $this->blogService->deleteBlog($blogId);
 
             return response()->json([
-                'message' => 'Blog deleted successfully',
-
-            ]);
+                'message' => 'Blog deleted successfully'
+            ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Blog failed to delete',
-            ]);
+                'message' => $e->getMessage()
+            ], $e->getCode());
         }
     }
 }
