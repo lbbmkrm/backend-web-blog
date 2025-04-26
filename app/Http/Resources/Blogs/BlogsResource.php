@@ -20,7 +20,7 @@ class BlogsResource extends JsonResource
             'description' => $this->description,
             'slug' => $this->slug,
             'thumbnail' => $this->thumbnail,
-            'createdAt' => $this->created_at
+            'createdAt' => $this->created_at->format('d-m-Y H:i'),
         ];
     }
 }

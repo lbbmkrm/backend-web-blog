@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Resources\User\UserResource;
-use App\Models\User;
-use DB;
 use Exception;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Resources\User\UserResource;
+use App\Http\Requests\Auth\RegisterRequest;
 
 class AuthController extends Controller
 {
@@ -38,20 +36,13 @@ class AuthController extends Controller
     {
 
         $data = $request->validated();
-
-        $imagePath = '';
         try {
             DB::beginTransaction();
-
-            if ($request->hasFile('img')) {
-                $imagePath = $request->file('img')->store('profile_image', 'public');
-            }
 
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => bcrypt($data['password']),
-                'img' => $imagePath,
                 'bio' => $data['bio'],
                 'created_at' => now()
             ]);

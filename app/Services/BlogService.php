@@ -6,16 +6,19 @@ use Exception;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\BlogRepository;
+use App\Repositories\CommentRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class BlogService
 {
     protected $blogRepo;
+    protected $commentRepo;
 
-    public function __construct(BlogRepository $blog)
+    public function __construct(BlogRepository $blog, CommentRepository $comment)
     {
         $this->blogRepo = $blog;
+        $this->commentRepo = $comment;
     }
 
     public function getAllBlogs()
@@ -27,7 +30,7 @@ class BlogService
     {
         $blog = $this->blogRepo->findWithRelations($id);
         if (!$blog) {
-            return new Exception('Blog not found', 404);
+            throw new Exception('Blog not found', 404);
         }
         return $blog;
     }
@@ -96,6 +99,44 @@ class BlogService
             $this->blogRepo->delete($blog);
         } catch (Exception $e) {
             throw new Exception('Blog failed to delete', 500);
+        }
+    }
+
+    public function createComment(int $blogId, array $data)
+    {
+        $blog = $this->blogRepo->find($blogId);
+        $user = Auth::user();
+
+        try {
+            DB::beginTransaction();
+            $commentData = [
+                'blog_id' => $blog->id,
+                'user_id' => $user->id,
+                'content' => $data['content'],
+                'created_at' => now()
+            ];
+            $comment = $this->commentRepo->create($commentData);
+            DB::commit();
+
+            return $comment;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw new Exception('Comment failed to create', 500);
+        }
+    }
+
+    public function deleteComment(int $blogId)
+    {
+        $user = Auth::user();
+        $blog = $this->blogRepo->find($blogId);
+        $comment = $this->commentRepo->where($blog->id, $user->id);
+        if (!$comment) {
+            throw new Exception('Comment not found', 404);
+        }
+        try {
+            $this->commentRepo->delete($comment);
+        } catch (Exception $e) {
+            throw new Exception('Comment failed to delete');
         }
     }
 }

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CommentResource;
 use App\Services\BlogService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Http\Requests\Blogs\StoreBlogRequest;
 use App\Http\Requests\Blogs\UpdateBlogRequest;
+use App\Http\Requests\CommentRequest;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\Blogs\BlogResource;
 use App\Http\Resources\Blogs\BlogsResource;
@@ -26,6 +28,8 @@ class BlogController extends Controller
         $this->categoryRepo = $categoryRepository;
         $this->blogService = $blogService;
     }
+
+    //category route
     public function getCategories()
     {
         $categories = $this->categoryRepo->getAll();
@@ -40,6 +44,8 @@ class BlogController extends Controller
         return CategoryResource::collection($categories);
     }
 
+
+    //blog route
     public function getAllBlogs()
     {
         $blogs = $this->blogService->getAllBlogs();
@@ -110,6 +116,39 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
+            ], $e->getCode());
+        }
+    }
+
+    //comment route
+    public function addComment(CommentRequest $request, int $blogId)
+    {
+        try {
+            $validated = $request->validated();
+            $comment = $this->blogService->createComment($blogId, $validated);
+
+            return response()->json([
+                'message' => 'Comment added successfully',
+                'data' => new CommentResource($comment)
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], $e->getCode());
+        }
+    }
+
+    public function deleteComment(int $blogId)
+    {
+        try {
+            $this->blogService->deleteComment($blogId);
+            return response()->json([
+                'message' => 'Comment deleted successfully',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Comment failed to delete'
             ], $e->getCode());
         }
     }

@@ -24,8 +24,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('users', [UserController::class, 'getUsers']);
 
     Route::controller(BlogController::class)->group(function () {
+        //Blog CRUD
         Route::post('blog/create',  'blogCreate');
         Route::put('blog/{blogId}/update',  'blogUpdate');
         Route::delete('blog/{blogId}/delete',  'blogDelete');
+
+        //Blog Comment
+        Route::post('blog/{blogId}/addComment', 'addComment');
+        Route::delete('/blog/{blogId}/deleteComment', 'deleteComment');
     });
 });
