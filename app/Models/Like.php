@@ -15,6 +15,8 @@ class Like extends Model
         'blog_id'
     ];
 
+    public $timestamps = false;
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');

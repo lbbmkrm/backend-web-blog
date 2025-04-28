@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\CommentResource;
+use Exception;
 use App\Services\BlogService;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use App\Http\Requests\Blogs\StoreBlogRequest;
-use App\Http\Requests\Blogs\UpdateBlogRequest;
+use Illuminate\Support\Facades\Log;
 use App\Http\Requests\CommentRequest;
+use App\Http\Resources\CommentResource;
 use App\Http\Resources\CategoryResource;
+use App\Repositories\CategoryRepository;
 use App\Http\Resources\Blogs\BlogResource;
 use App\Http\Resources\Blogs\BlogsResource;
-use App\Repositories\CategoryRepository;
-use Exception;
+use App\Http\Requests\Blogs\StoreBlogRequest;
+use App\Http\Requests\Blogs\UpdateBlogRequest;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 /**
  * @method void authorize(string $ability, mixed $arguments)
@@ -60,7 +61,7 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
         }
     }
 
@@ -78,7 +79,7 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
         }
     }
 
@@ -98,7 +99,7 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Blog failed to update'
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
         }
     }
 
@@ -116,7 +117,7 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
         }
     }
 
@@ -135,7 +136,7 @@ class BlogController extends Controller
             return response()->json([
                 'message' => $e->getMessage(),
                 'code' => $e->getCode()
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
         }
     }
 
@@ -149,7 +150,39 @@ class BlogController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'Comment failed to delete'
-            ], $e->getCode());
+            ], $e->getCode() ?: 500);
+        }
+    }
+
+
+    //like route
+    public function like(int $blogId)
+    {
+        Log::info('createLike called', ['blogId' => $blogId]);
+        try {
+            $this->blogService->addLike($blogId);
+
+            return response()->json([
+                'message' => 'Blog liked successfully'
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 500);
+        }
+    }
+
+    public function unLike(int $blogId)
+    {
+        try {
+            $this->blogService->removeLike($blogId);
+            return response()->json([
+                'message' => 'Success unlike'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getCode() ?: 500);
         }
     }
 }

@@ -18,7 +18,7 @@ Route::controller(BlogController::class)->group(function () {
     Route::get('/blog/{blogId}', 'getSingleBlog');
 });
 
-
+Route::get('/likes', [UserController::class, 'likes']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('users', [UserController::class, 'getUsers']);
@@ -32,5 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
         //Blog Comment
         Route::post('blog/{blogId}/addComment', 'addComment');
         Route::delete('/blog/{blogId}/deleteComment', 'deleteComment');
+
+        //Blog like
+        Route::post('/blog/{blogId}/like', 'like');
+        Route::delete('/blog/{blogId}/unlike', 'unlike');
     });
 });

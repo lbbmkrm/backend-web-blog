@@ -19,5 +19,6 @@ class ResetDatabase extends Command
         $this->call('db:seed');
 
         $this->info('Database telah di-reset dan diseed ulang!');
+        $this->info('');
     }
 }

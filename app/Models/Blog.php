@@ -36,8 +36,8 @@ class Blog extends Model
         return $this->hasMany(Comment::class, 'blog_id', 'id');
     }
 
-    public function likes(): HasMany
+    public function likes()
     {
-        return $this->hasMany(Like::class, 'blog_id', 'id');
+        return $this->belongsToMany(User::class, 'likes', 'blog_id', 'user_id');
     }
 }
