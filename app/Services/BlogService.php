@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BlogImage;
 use Exception;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,7 @@ class BlogService
         return $blog;
     }
 
-    public function createBlog(array $data, $imgPath = null)
+    public function createBlog(array $data)
     {
         try {
             DB::beginTransaction();
@@ -56,18 +57,23 @@ class BlogService
                 'category_id' => $data['category_id'],
                 'title' => $data['title'],
                 'content' => $data['content'],
-                'description' => $data['description'],
+                'description' => $data['description'] ?? null,
                 'slug' => $slug,
-                'thumbnail' => $imgPath ? $imgPath->store('thumbnails ', 'public') : '',
                 'created_at' => now()
             ];
+
+            if (isset($data['thumbnail'])) {
+                $blogData['thumbnail'] = $data['thumbnail']->store('thumbnails', 'public');
+            } else {
+                $blogData['thumbnail'] = null;
+            }
 
             $blog = $this->blogRepo->create($blogData);
             DB::commit();
             return $blog;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Blog failed to create', 500);
+            throw new Exception('failed to create blog', 500);
         }
     }
 

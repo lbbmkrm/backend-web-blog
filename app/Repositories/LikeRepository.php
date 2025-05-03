@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Blog;
-use App\Models\Like;
 use App\Models\User;
 use Exception;
 

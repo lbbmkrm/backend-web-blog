@@ -15,26 +15,32 @@ Route::controller(AuthController::class)->group(function () {
 Route::controller(BlogController::class)->group(function () {
     Route::get('/categories', 'getCategories');
     Route::get('/blogs', 'getAllBlogs');
-    Route::get('/blog/{blogId}', 'getSingleBlog');
+    Route::get('/blogs/{blogId}', 'getSingleBlog');
 });
 
-Route::get('/likes', [UserController::class, 'likes']);
-
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('users', [UserController::class, 'getUsers']);
+    //user
+    Route::controller(UserController::class)->group(function () {
+
+        Route::get('/users/likes', 'likes');
+        Route::get('/users', 'getAllUsers');
+        Route::get('/users/{userId}', 'getUser');
+        Route::post('/users/{userId}/follow', 'follow');
+        Route::delete('/users/{userId}/unfollow', 'unFollow');
+    });
 
     Route::controller(BlogController::class)->group(function () {
         //Blog CRUD
-        Route::post('blog/create',  'blogCreate');
-        Route::put('blog/{blogId}/update',  'blogUpdate');
-        Route::delete('blog/{blogId}/delete',  'blogDelete');
+        Route::post('/blogs/create',  'blogCreate');
+        Route::put('/blogs/{blogId}/update',  'blogUpdate');
+        Route::delete('/blogs/{blogId}/delete',  'blogDelete');
 
         //Blog Comment
-        Route::post('blog/{blogId}/addComment', 'addComment');
-        Route::delete('/blog/{blogId}/deleteComment', 'deleteComment');
+        Route::post('/blogs/{blogId}/addComment', 'addComment');
+        Route::delete('/blogs/{blogId}/deleteComment', 'deleteComment');
 
         //Blog like
-        Route::post('/blog/{blogId}/like', 'like');
-        Route::delete('/blog/{blogId}/unlike', 'unlike');
+        Route::post('/blogs/{blogId}/like', 'like');
+        Route::delete('/blogs/{blogId}/unlike', 'unlike');
     });
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Blogs;
 
+use App\Http\Resources\BlogImageResource;
 use App\Http\Resources\CommentResource;
 use Illuminate\Http\Request;
 use App\Http\Resources\CategoryResource;
@@ -28,7 +29,7 @@ class BlogResource extends JsonResource
             'createdAt' => $this->created_at->format('d-m-Y H:i'),
             'updatedAt' => $this->updated_at->format('d-m-Y H:i'),
             'comments' =>  CommentResource::collection(($this->whenLoaded('comments'))),
-            'likesCount' => $this->likes()->count()
+            'likesCount' => $this->likes()->count(),
         ];
     }
 }

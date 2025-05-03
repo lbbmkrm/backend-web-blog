@@ -15,7 +15,7 @@ class BlogRepository
 
     public function getAll()
     {
-        return $this->model->all();
+        return $this->model->with(['user'])->get();
     }
 
     public function find(int $id): ?Blog

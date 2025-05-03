@@ -7,6 +7,7 @@ use App\Models\Like;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -68,5 +69,25 @@ class User extends Authenticatable
     public function likedBlogs()
     {
         return $this->belongsToMany(Blog::class, 'likes', 'user_id', 'blog_id');
+    }
+
+    public function following(): BelongsToMany
+    {
+        return $this->BelongsToMany(
+            related: Follow::class,
+            table: 'follows',
+            foreignPivotKey: 'follower_id',
+            relatedPivotKey: 'user_id'
+        );
+    }
+
+    public function follower(): BelongsToMany
+    {
+        return $this->BelongsToMany(
+            related: Follow::class,
+            table: 'follows',
+            foreignPivotKey: 'user_id',
+            relatedPivotKey: 'follower_id'
+        );
     }
 }

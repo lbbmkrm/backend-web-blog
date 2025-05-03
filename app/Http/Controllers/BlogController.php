@@ -69,13 +69,13 @@ class BlogController extends Controller
     {
         try {
             $validated = $request->validated();
-            $imgPath = $request->file('thumbnail');
-            $blog = $this->blogService->createBlog($validated, $imgPath);
+
+            $blog = $this->blogService->createBlog($validated);
 
             return response()->json([
                 'message' => 'Blog created successfully',
-                'data' => new BlogResource($blog->load(['user', 'category'], 201))
-            ]);
+                'data' => new BlogResource($blog->load(['user', 'category']))
+            ], 201);
         } catch (Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),

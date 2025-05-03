@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 class ResetDatabase extends Command
 {
-    protected $signature = 'reset:db';
+    protected $signature = 'db:reset';
 
     protected $description = 'Menjalankan migrate:fresh lalu db:seed';
 
