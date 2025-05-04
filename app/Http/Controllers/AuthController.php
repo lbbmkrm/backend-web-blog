@@ -9,26 +9,30 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\User\UserResource;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Services\AuthService;
 
 class AuthController extends Controller
 {
+    private $authService;
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only(['email', 'password']);
-        if (!Auth::attempt($credentials)) {
+        $credentials = $request->validated();
+        try {
+            $user = $this->authService->login($credentials);
             return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
+                'message' => 'Login Successfully',
+                'user' => new UserResource($user['user']),
+                'token' => $user['token']
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 500);
         }
-
-        $user = Auth::user();
-        $token = $user->createToken('authentication_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login Successful',
-            'userId' => $user->id,
-            'token' => $token
-        ], 200);
     }
 
 
@@ -38,32 +42,47 @@ class AuthController extends Controller
         $data = $request->validated();
         try {
             DB::beginTransaction();
-
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => bcrypt($data['password']),
-                'bio' => $data['bio'],
-                'created_at' => now()
-            ]);
-
+            $newUser = $this->authService->register($data);
             DB::commit();
-
-            $token = $user->createToken('authentication_token')->plainTextToken;
-
             return response()->json([
-                'message' => 'Register Success',
-                'token' => $token,
-                'userId' => $user->id,
-                'user' => new UserResource($user)
+                'message' => 'Success register',
+                'userId' => $newUser['user']['id'],
+                'token' => $newUser['token'],
+                'user' => new UserResource($newUser['user'])
             ], 201);
         } catch (Exception $e) {
-
             DB::rollBack();
-
             return response()->json([
-                'message' => 'User register failed.'
-            ], 500);
+                'message' => $e->getMessage()
+            ], $e->getCode());
+        }
+    }
+
+    public function logout()
+    {
+        try {
+            $this->authService->logout();
+            return response()->json([
+                'message' => 'Success logout'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getCode());
+        }
+    }
+
+    public function me()
+    {
+        try {
+            $user = $this->authService->currentUser();
+            return response()->json([
+                'user' => new UserResource($user)
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getCode());
         }
     }
 }

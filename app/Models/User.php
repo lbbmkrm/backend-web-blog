@@ -31,6 +31,7 @@ class User extends Authenticatable
         'img',
         'bio',
     ];
+    public $timestamps = true;
 
     /**
      * The attributes that should be hidden for serialization.

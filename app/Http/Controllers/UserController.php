@@ -23,7 +23,7 @@ class UserController extends Controller
             'data' => $likes->toArray()
         ]);
     }
-    public function getAllUsers()
+    public function index()
     {
         try {
             $users = $this->userService->getAllUsers();
@@ -38,11 +38,11 @@ class UserController extends Controller
         }
     }
 
-    public function getUser(int $userId)
+    public function show(int $id)
     {
 
         try {
-            $user = $this->userService->getUser($userId);
+            $user = $this->userService->getUser($id);
             return response()->json([
                 'message' => 'success',
                 'data' => new UserResource($user)
@@ -56,10 +56,10 @@ class UserController extends Controller
 
 
 
-    public function follow(int $userId)
+    public function follow(int $id)
     {
         try {
-            $this->userService->follow($userId);
+            $this->userService->follow($id);
             return response()->json([
                 'message' => 'Success following'
             ]);
@@ -70,10 +70,10 @@ class UserController extends Controller
         }
     }
 
-    public function unFollow(int $userId)
+    public function unFollow(int $id)
     {
         try {
-            $this->userService->unFollow($userId);
+            $this->userService->unFollow($id);
             return response()->json([
                 'message' => 'Success un-following'
             ]);

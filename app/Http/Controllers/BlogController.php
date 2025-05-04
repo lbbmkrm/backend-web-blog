@@ -31,7 +31,7 @@ class BlogController extends Controller
     }
 
     //category route
-    public function getCategories()
+    public function categories()
     {
         $categories = $this->categoryRepo->getAll();
 
@@ -47,13 +47,13 @@ class BlogController extends Controller
 
 
     //blog route
-    public function getAllBlogs()
+    public function index()
     {
         $blogs = $this->blogService->getAllBlogs();
 
         return BlogsResource::collection($blogs);
     }
-    public function getSingleBlog(int $blogId)
+    public function show(int $blogId)
     {
         try {
             $blog = $this->blogService->getSingleBlog($blogId);
@@ -65,7 +65,7 @@ class BlogController extends Controller
         }
     }
 
-    public function blogCreate(StoreBlogRequest $request)
+    public function store(StoreBlogRequest $request)
     {
         try {
             $validated = $request->validated();
@@ -84,7 +84,7 @@ class BlogController extends Controller
     }
 
 
-    public function blogUpdate(UpdateBlogRequest $request, int $blogId)
+    public function update(UpdateBlogRequest $request, int $blogId)
     {
         try {
             $blog = $this->blogService->getSingleBlog($blogId);
@@ -103,13 +103,13 @@ class BlogController extends Controller
         }
     }
 
-    public function blogDelete(int $blogId)
+    public function destroy(int $id)
     {
         try {
-            $blog = $this->blogService->getSingleBlog($blogId);
+            $blog = $this->blogService->getSingleBlog($id);
             $this->authorize('delete', $blog);
 
-            $this->blogService->deleteBlog($blogId);
+            $this->blogService->deleteBlog($id);
 
             return response()->json([
                 'message' => 'Blog deleted successfully'
@@ -122,11 +122,11 @@ class BlogController extends Controller
     }
 
     //comment route
-    public function addComment(CommentRequest $request, int $blogId)
+    public function addComment(CommentRequest $request, int $id)
     {
         try {
             $validated = $request->validated();
-            $comment = $this->blogService->createComment($blogId, $validated);
+            $comment = $this->blogService->createComment($id, $validated);
 
             return response()->json([
                 'message' => 'Comment added successfully',
@@ -140,10 +140,10 @@ class BlogController extends Controller
         }
     }
 
-    public function deleteComment(int $blogId)
+    public function deleteComment(int $id)
     {
         try {
-            $this->blogService->deleteComment($blogId);
+            $this->blogService->deleteComment($id);
             return response()->json([
                 'message' => 'Comment deleted successfully',
             ]);
@@ -156,11 +156,11 @@ class BlogController extends Controller
 
 
     //like route
-    public function like(int $blogId)
+    public function like(int $id)
     {
-        Log::info('createLike called', ['blogId' => $blogId]);
+        Log::info('createLike called', ['blogId' => $id]);
         try {
-            $this->blogService->addLike($blogId);
+            $this->blogService->addLike($id);
 
             return response()->json([
                 'message' => 'Blog liked successfully'
@@ -172,10 +172,10 @@ class BlogController extends Controller
         }
     }
 
-    public function unLike(int $blogId)
+    public function unLike(int $id)
     {
         try {
-            $this->blogService->removeLike($blogId);
+            $this->blogService->removeLike($id);
             return response()->json([
                 'message' => 'Success unlike'
             ]);
