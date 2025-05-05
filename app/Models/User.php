@@ -75,17 +75,17 @@ class User extends Authenticatable
     public function following(): BelongsToMany
     {
         return $this->BelongsToMany(
-            related: Follow::class,
+            related: User::class,
             table: 'follows',
             foreignPivotKey: 'follower_id',
             relatedPivotKey: 'user_id'
         );
     }
 
-    public function follower(): BelongsToMany
+    public function followers(): BelongsToMany
     {
         return $this->BelongsToMany(
-            related: Follow::class,
+            related: User::class,
             table: 'follows',
             foreignPivotKey: 'user_id',
             relatedPivotKey: 'follower_id'

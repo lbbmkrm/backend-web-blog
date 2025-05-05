@@ -15,7 +15,7 @@ class BlogRepository
 
     public function getAll()
     {
-        return $this->model->with(['user'])->get();
+        return $this->model->with(['user', 'category'])->get();
     }
 
     public function find(int $id): ?Blog
@@ -25,7 +25,7 @@ class BlogRepository
 
     public function findWithRelations(int $id)
     {
-        return $this->model->with(['category', 'user', 'comments'])->find($id);
+        return $this->model->with(['category', 'user', 'comments'])->findOrFail($id);
     }
 
     public function create(array $data)

@@ -31,13 +31,11 @@ class StoreBlogRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'content' => 'required|string',
-            'description' => 'nullable|string',
-            'thumbnail' => 'nullable|image|max:2048',
-            'image_ids' => 'nullable|array',
-            'image_ids.*' => 'exists:blog_images,id'
+            'title' => 'sometimes|string|max:255',
+            'category_id' => 'sometimes|exists:categories,id',
+            'content' => 'sometimes|string',
+            'description' => 'sometimes|nullable|string',
+            'thumbnail' => 'sometimes|nullable|image|max:2048',
         ];
     }
 }

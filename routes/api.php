@@ -31,6 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users/{id}', 'show');
         Route::post('/users/{id}/follow', 'follow');
         Route::delete('/users/{id}/unfollow', 'unFollow');
+        Route::get('/users/{id}/followers', 'followers');
+        Route::get('/users/{id}/following', 'following');
+        Route::patch('/users/{id}', 'update');
+        Route::get('users/{id}/blogs', 'blogs');
     });
 
     Route::controller(BlogController::class)->group(function () {

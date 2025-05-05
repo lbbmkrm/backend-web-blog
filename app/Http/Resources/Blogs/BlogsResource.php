@@ -26,8 +26,9 @@ class BlogsResource extends JsonResource
             'thumbnail' => $this->thumbnail,
             'createdAt' => $this->created_at->format('d-m-Y H:i'),
             'author' => new UserSimpleResource($this->whenLoaded('user')),
+            'category' => new UserSimpleResource($this->whenLoaded('category')),
             'likeCount' => $this->likes->count(),
-            'likesBy' => $likeby //melanggar prinsip repository pattern
+            'likesBy' => $likeby //melanggar prinsip repository pattern!
         ];
     }
 }

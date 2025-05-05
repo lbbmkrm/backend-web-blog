@@ -1,15 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-/**
- * @method bool hasFile(string $key)
- * @method array only(array|string $keys)
- * @method \Illuminate\Http\UploadedFile|null file(string $key = null, $default = null)
- */
-class RegisterRequest extends FormRequest
+class UserUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,9 +22,8 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:8'
+            'name' => 'sometimes|max:255',
+            'bio' => 'nullable'
         ];
     }
 }

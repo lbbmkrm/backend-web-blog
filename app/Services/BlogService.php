@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\BlogImage;
 use Exception;
+use App\Models\Blog;
+use App\Models\BlogImage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\BlogRepository;
@@ -36,7 +37,7 @@ class BlogService
         return $this->blogRepo->getAll();
     }
 
-    public function getSingleBlog(int $id)
+    public function getSingleBlog(int $id): ?Blog
     {
         $blog = $this->blogRepo->findWithRelations($id);
         if (!$blog) {
@@ -77,26 +78,30 @@ class BlogService
         }
     }
 
-    public function updateBlog(int $id, array $data, $imgPath = null)
+    public function updateBlog(Blog $blog, array $data, $imgPath = null)
     {
-        $blog = $this->blogRepo->find($id);
-        if (!$blog) {
-            throw new Exception('Blog not found', 404);
-        }
-        if ($imgPath && $blog->thumbnail) {
-            Storage::disk('public')->delete($blog->thumbnail);
-            $data['thumbnail'] = $imgPath->store('thumbnails', 'public');
-        }
+        try {
+            DB::beginTransaction();
+            if ($imgPath && $blog->thumbnail) {
+                Storage::disk('public')->delete($blog->thumbnail);
+                $data['thumbnail'] = $imgPath->store('thumbnails', 'public');
+            }
 
-        $blogData = [
-            'category_id' => $data['category_id'],
-            'title' => $data['title'],
-            'content' => $data['content'],
-            'description' => $data['description'],
-            'thumbnail' => $imgPath ?? $blog->thumbnail,
-            'updated_at' => now()
-        ];
-        return $this->blogRepo->update($blog, $blogData);
+            $blogData = [
+                'category_id' => $data['category_id'],
+                'title' => $data['title'],
+                'content' => $data['content'],
+                'description' => $data['description'],
+                'thumbnail' => $imgPath ?? $blog->thumbnail
+            ];
+            DB::commit();
+            $updatedBlog = $this->blogRepo->update($blog, $blogData);
+            $updatedBlog->load(['category']);
+            return $updatedBlog;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage(), $e->getCode() ?: 500);
+        }
     }
 
     public function deleteBlog(int $blogId)

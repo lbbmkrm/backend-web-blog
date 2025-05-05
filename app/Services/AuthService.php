@@ -19,12 +19,21 @@ class AuthService
     public function login(array $requestData)
     {
         try {
-            $this->authRepo->login($requestData['email'], $requestData['password']);
+            if (!$this->authRepo->login($requestData['email'], $requestData['password'])) {
+                throw new Exception('Invalid credentials!', 401);
+            }
+
             $currentUser = $this->authRepo->currentUser();
+
+            if (!$currentUser) {
+                throw new Exception('User not found!', 401);
+            }
+
             $token = $currentUser->createToken('authentication_token')->plainTextToken;
+
             return ['user' => $currentUser, 'token' => $token];
         } catch (Exception $e) {
-            throw new Exception('Invalid credentials!', 401);
+            throw new Exception($e->getMessage(), $e->getCode() ?: 401);
         }
     }
 

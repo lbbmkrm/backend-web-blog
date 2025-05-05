@@ -68,6 +68,7 @@ class BlogController extends Controller
     public function store(StoreBlogRequest $request)
     {
         try {
+
             $validated = $request->validated();
 
             $blog = $this->blogService->createBlog($validated);
@@ -91,14 +92,14 @@ class BlogController extends Controller
             $this->authorize('update', $blog);
             $validated = $request->validated();
             $thumbnail = $request->file('thumbnail');
-            $updatedBlog = $this->blogService->updateBlog($blog->id, $validated, $thumbnail);
+            $updatedBlog = $this->blogService->updateBlog($blog, $validated, $thumbnail);
             return response()->json([
                 'message' => 'Blog updated successfully',
                 'data' => new BlogResource($updatedBlog)
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Blog failed to update'
+                'message' => $e->getMessage()
             ], $e->getCode() ?: 500);
         }
     }
