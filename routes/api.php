@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -17,23 +18,28 @@ Route::controller(AuthController::class)->group(function () {
 });
 
 Route::controller(BlogController::class)->group(function () {
-    Route::get('/categories', 'categories');
     Route::get('/blogs', 'index');
     Route::get('/blogs/{id}', 'show');
+});
+
+Route::controller(CategoryController::class)->group(function () {
+    Route::get('/categories', 'index');
+    Route::get('/categories/{id}', 'show');
+    Route::get('/categories/{id}/blogs');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     //user
     Route::controller(UserController::class)->group(function () {
 
-        Route::get('/users/likes', 'likes');
         Route::get('/users', 'index');
         Route::get('/users/{id}', 'show');
+        Route::patch('/users/{id}', 'update');
         Route::post('/users/{id}/follow', 'follow');
         Route::delete('/users/{id}/unfollow', 'unFollow');
         Route::get('/users/{id}/followers', 'followers');
         Route::get('/users/{id}/following', 'following');
-        Route::patch('/users/{id}', 'update');
+        Route::get('/users/likes', 'likes');
         Route::get('users/{id}/blogs', 'blogs');
     });
 

@@ -3,18 +3,32 @@
 namespace App\Repositories;
 
 use App\Models\Category;
+use Illuminate\Support\Collection;
 
 class CategoryRepository
 {
-    protected $category;
+    /**
+     * @var \App\Models\Category
+     */
+    protected $model;
 
-    public function __construct(Category $model)
+    public function __construct(Category $category)
     {
-        $this->category = $model;
+        $this->model = $category;
     }
 
-    public function getAll()
+    public function getAll(): ?Collection
     {
-        return $this->category->all();
+        return $this->model->all();
+    }
+
+    public function getSingle(int $id): ?Category
+    {
+        return $this->model->find($id);
+    }
+
+    public function blogs(Category $category)
+    {
+        return $category->blogs;
     }
 }

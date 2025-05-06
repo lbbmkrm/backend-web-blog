@@ -7,8 +7,6 @@ use App\Services\BlogService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\CommentRequest;
 use App\Http\Resources\CommentResource;
-use App\Http\Resources\CategoryResource;
-use App\Repositories\CategoryRepository;
 use App\Http\Resources\Blogs\BlogResource;
 use App\Http\Resources\Blogs\BlogsResource;
 use App\Http\Requests\Blogs\StoreBlogRequest;
@@ -21,30 +19,12 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class BlogController extends Controller
 {
     use AuthorizesRequests;
-    private $categoryRepo;
     private $blogService;
 
-    public function __construct(BlogService $blogService, CategoryRepository $categoryRepository)
+    public function __construct(BlogService $blogService)
     {
-        $this->categoryRepo = $categoryRepository;
         $this->blogService = $blogService;
     }
-
-    //category route
-    public function categories()
-    {
-        $categories = $this->categoryRepo->getAll();
-
-        if ($categories->isEmpty()) {
-            return response()->json([
-                'message' => 'No categories found',
-                'data' => []
-            ], 200);
-        }
-
-        return CategoryResource::collection($categories);
-    }
-
 
     //blog route
     public function index()
