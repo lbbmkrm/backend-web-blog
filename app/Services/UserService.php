@@ -4,11 +4,12 @@ namespace App\Services;
 
 use Exception;
 use App\Models\User;
-use App\Repositories\FollowRepository;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\UserRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use App\Repositories\FollowRepository;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Collection;
 
 class UserService
 {
@@ -49,17 +50,28 @@ class UserService
     public function updateUser(User $user, array $request)
     {
         try {
+            if ($request['avatar']) {
+            }
             $data = [
-                'name' => $request['name'],
-                'bio' => $request['bio']
+                'bio' => $request['bio'] ?: null,
+                'avatar' => $request['avatar'] ?: null,
+                'phone' => $request['phone'] ?: null
             ];
+            if (isset($request['avatar']) && $request['avatar'] instanceof \Illuminate\Http\UploadedFile) {
+
+                if ($user->avatar) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+                $path = $request['avatar']->store('avatars', 'public');
+                $data['avatar'] = $path;
+            }
             DB::beginTransaction();
             $updatedUser = $this->userRepo->update($user, $data);
             DB::commit();
             return $updatedUser;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Failed to update user', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 

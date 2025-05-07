@@ -26,6 +26,7 @@ class BlogResource extends JsonResource
             'content' => $this->content,
             'description' => $this->description,
             'thumbnail' => $this->thumbnail,
+            'slug' => $this->slug,
             'createdAt' => $this->created_at->format('d-m-Y H:i'),
             'updatedAt' => $this->updated_at->format('d-m-Y H:i'),
             'comments' =>  CommentResource::collection(($this->whenLoaded('comments'))),

@@ -22,8 +22,9 @@ class UserUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'sometimes|max:255',
-            'bio' => 'nullable'
+            'bio' => 'nullable',
+            'avatar' => 'nullable|image|max:2048',
+            'phone' => 'nullable|numeric|digits_between:10,15'
         ];
     }
 }

@@ -19,7 +19,9 @@ class AuthService
     public function login(array $requestData)
     {
         try {
-            if (!$this->authRepo->login($requestData['email'], $requestData['password'])) {
+            $credential = $requestData['username'] ?? $requestData['email'];
+
+            if (!$this->authRepo->login($credential, $requestData['password'])) {
                 throw new Exception('Invalid credentials!', 401);
             }
 
@@ -51,10 +53,10 @@ class AuthService
             $message = null;
             $code = 0;
             if ($e->getCode() === 23000) {
-                $message = 'Email already registered';
+                $message = 'Email or Username already registered';
                 $code = 422;
             }
-            throw new Exception($message ?: 'Failed to register', $code ?:  500);
+            throw new Exception($message ?: $e->getMessage(), $code ?:  500);
         }
     }
 
@@ -85,6 +87,36 @@ class AuthService
             return $user;
         } catch (Exception $e) {
             throw new Exception($e->getMessage() ?: 'Failed', $e->getCode() ?: 500);
+        }
+    }
+
+    public function checkUsername(string $username)
+    {
+        try {
+            $existed = $this->authRepo->existUsername($username);
+            return $existed;
+        } catch (Exception $e) {
+            throw new Exception('failed check username', 500);
+        }
+    }
+
+    public function checkEmail(string $email)
+    {
+        try {
+            $existed = $this->authRepo->existEmail($email);
+            return $existed;
+        } catch (Exception $e) {
+            throw new Exception('failed check email', 500);
+        }
+    }
+
+    public function checkStudentNumber(int $studentNumber)
+    {
+        try {
+            $existed = $this->authRepo->verifiedStudent($studentNumber);
+            return $existed;
+        } catch (Exception $e) {
+            throw new Exception('failed check student number', 500);
         }
     }
 }
