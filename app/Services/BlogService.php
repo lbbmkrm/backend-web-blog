@@ -4,20 +4,24 @@ namespace App\Services;
 
 use Exception;
 use App\Models\Blog;
+use App\Models\User;
 use App\Models\BlogImage;
+use App\Models\Comment;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\BlogRepository;
 use App\Repositories\LikeRepository;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use App\Repositories\CommentRepository;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Collection;
 
 class BlogService
 {
-    protected $blogRepo;
-    protected $commentRepo;
-    protected $likeRepo;
+    protected BlogRepository $blogRepo;
+    protected CommentRepository $commentRepo;
+    protected LikeRepository $likeRepo;
 
 
     public function __construct(BlogRepository $blog, CommentRepository $comment, LikeRepository $like)
@@ -27,30 +31,48 @@ class BlogService
         $this->likeRepo = $like;
     }
 
-    private function getUser()
+    private function getUser(): ?User
     {
         return Auth::user();
     }
 
-    public function getAllBlogs()
+    public function authorizedCheck(string $ability, Blog|Comment $model): void
     {
-        return $this->blogRepo->getAll();
+        if (Gate::denies($ability, $model)) {
+            throw new Exception('unauthorized', 403);
+        }
     }
-
-    public function getSingleBlog(int $id): ?Blog
+    private function findBlogOrFail(int $id): ?Blog
     {
-        $blog = $this->blogRepo->findWithRelations($id);
+        $blog = $this->blogRepo->getById($id);
         if (!$blog) {
-            throw new Exception('Blog not found', 404);
+            throw new Exception('blog not found', 404);
         }
         return $blog;
     }
 
-    public function createBlog(array $data)
+    public function getAllBlogs(): ?Collection
+    {
+        return $this->blogRepo->getAll();
+    }
+
+    public function getBlogDetail(int $id): ?Blog
+    {
+        try {
+            $blog = $this->blogRepo->getById($id, ['category', 'user', 'comments']);
+            if (!$blog) {
+                throw new Exception('Blog not found', 404);
+            }
+            return $blog;
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage() ?: 'failed get blog', $e->getCode() ?: 500);
+        }
+    }
+
+    public function createBlog(array $data): ?Blog
     {
         try {
             DB::beginTransaction();
-
             $slug = Str::slug($data['title']);
             $user = $this->getUser();
             $blogData = [
@@ -74,13 +96,14 @@ class BlogService
             return $blog;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('failed to create blog', 500);
+            throw new Exception($e->getMessage() ?: 'failed to create blog', $e->getCode() ?: 500);
         }
     }
 
-    public function updateBlog(Blog $blog, array $data, $imgPath = null)
+    public function updateBlog(Blog $blog, array $data, $imgPath = null): ?Blog
     {
         try {
+            $this->authorizedCheck('update', $blog);
             DB::beginTransaction();
             if ($imgPath && $blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
@@ -94,39 +117,35 @@ class BlogService
                 'description' => $data['description'],
                 'thumbnail' => $imgPath ?? $blog->thumbnail
             ];
-            DB::commit();
             $updatedBlog = $this->blogRepo->update($blog, $blogData);
             $updatedBlog->load(['category']);
+            DB::commit();
             return $updatedBlog;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage(), $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'failed to update', $e->getCode() ?: 500);
         }
     }
 
-    public function deleteBlog(int $blogId)
+    public function removeBlog(int $blogId): void
     {
-        $blog = $this->blogRepo->find($blogId);
-        if (!$blog) {
-            throw new Exception('Blog not found', 404);
-        }
-
         try {
+            $blog = $this->findBlogOrFail($blogId);
+            $this->authorizedCheck('delete', $blog);
             if ($blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
             }
             $this->blogRepo->delete($blog);
         } catch (Exception $e) {
-            throw new Exception('Blog failed to delete', 500);
+            throw new Exception($e->getMessage() ?: 'Blog failed to delete', $e->getCode() ?: 500);
         }
     }
 
-    public function createComment(int $blogId, array $data)
+    public function addComment(int $blogId, array $data): ?Comment
     {
-        $blog = $this->blogRepo->find($blogId);
-        $user = Auth::user();
-
         try {
+            $blog = $this->findBlogOrFail($blogId);
+            $user = $this->getUser();
             DB::beginTransaction();
             $commentData = [
                 'blog_id' => $blog->id,
@@ -140,66 +159,58 @@ class BlogService
             return $comment;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Comment failed to create', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Comment failed to create', $e->getCode() ?: 500);
         }
     }
 
-    public function deleteComment(int $blogId)
+    public function removeComment(int $blogId): void
     {
-
-        $blog = $this->blogRepo->find($blogId);
-        $user = $this->getUser();
-        $comment = $this->commentRepo->where($blog->id, $user->id);
-        if (!$comment) {
-            throw new Exception('Comment not found', 404);
-        }
         try {
+            $blog = $this->findBlogOrFail($blogId);
+            $user = $this->getUser();
+            $comment = $this->commentRepo->findByBlogAndUser($blog->id, $user->id);
+            if (!$comment) {
+                throw new Exception('Comment not found', 404);
+            }
+            $this->authorizedCheck('delete', $comment);
             $this->commentRepo->delete($comment);
         } catch (Exception $e) {
-            throw new Exception('Comment failed to delete');
+            throw new Exception($e->getMessage() ?: 'Comment failed to delete', $e->getCode() ?: 500);
         }
     }
 
-    public function addLike(int $blogId)
+    public function addLike(int $blogId): void
     {
-        $blog = $this->blogRepo->find($blogId);
-        if (!$blog) {
-            throw new Exception('Blog not found', 404);
-        }
-        $user = $this->getUser();
-        if ($this->likeRepo->exist($user, $blog)) {
-            throw new Exception('You have already liked this blog', 400);
-        };
-
         try {
+            $blog = $this->findBlogOrFail($blogId);
+            $user = $this->getUser();
+            if ($this->likeRepo->exist($user, $blog)) {
+                throw new Exception('You have already liked this blog', 400);
+            };
             DB::beginTransaction();
             $this->likeRepo->create($user, $blog);
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Failed to like blog', 500);
+            throw new Exception($e->getMessage() ?: 'Failed to like blog', $e->getCode() ?: 500);
         }
     }
 
-    public function removeLike(int $blogId)
+    public function removeLike(int $blogId): void
     {
-        $blog = $this->blogRepo->find($blogId);
-        if (!$blog) {
-            throw new Exception('Blog not found', 404);
-        }
-
-        $user = $this->getUser();
-        if (!$this->likeRepo->exist($user, $blog)) {
-            throw new Exception('You have not liked this blog', 400);
-        }
-
         try {
+            $blog = $this->findBlogOrFail($blogId);
+
+            $user = $this->getUser();
+            if (!$this->likeRepo->exist($user, $blog)) {
+                throw new Exception('You have not liked this blog', 400);
+            }
             DB::beginTransaction();
             $this->likeRepo->delete($user, $blog);
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception('Failed to unlike this blog');
+            throw new Exception($e->getMessage() ?: 'Failed to unlike this blog', $e->getCode() ?: 500);
         }
     }
 }

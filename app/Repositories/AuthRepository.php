@@ -31,6 +31,12 @@ class AuthRepository
 
     public function register(array $data): User
     {
+        if ($this->model->where('username', $data['username'])->exists()) {
+            throw new Exception('username already exists', 409);
+        }
+        if ($this->model->where('email', $data['email'])->exists()) {
+            throw new Exception('email already exists', 409);
+        }
         try {
             DB::beginTransaction();
             $newUser = $this->model->create([
@@ -53,9 +59,9 @@ class AuthRepository
                 'batch' => $existStudent->batch
             ]);
             DB::commit();
-        } catch (QueryException $e) {
+        } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage(), 500);
+            throw new Exception($e->getMessage(), $e->getCode());
         }
         return $newUser;
     }

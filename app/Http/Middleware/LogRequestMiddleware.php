@@ -16,16 +16,16 @@ class LogRequestMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $logData = [
-            'ip' => $request->ip(),
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
-            'header' => $request->headers->all(),
-            'body' => $request->all(),
-            'timestamp' => now()->toDateTimeString(),
-        ];
-        $logJson = json_encode($logData, JSON_PRETTY_PRINT);
-        Log::info('Incoming Request', ['log' => $logJson]);
+        // $logData = [
+        //     'ip' => $request->ip(),
+        //     'method' => $request->method(),
+        //     'url' => $request->fullUrl(),
+        //     'header' => $request->headers->all(),
+        //     'body' => $request->all(),
+        //     'timestamp' => now()->toDateTimeString(),
+        // ];
+        // $logJson = json_encode($logData, JSON_PRETTY_PRINT);
+        // Log::info('Incoming Request', ['log' => $logJson]);
 
         return $next($request);
     }

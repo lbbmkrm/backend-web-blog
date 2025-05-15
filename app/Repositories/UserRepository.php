@@ -3,12 +3,11 @@
 namespace App\Repositories;
 
 use App\Models\User;
-use Exception;
 use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository
 {
-    private $model;
+    private User $model;
     public function __construct(User $user)
     {
         $this->model = $user;
@@ -19,10 +18,11 @@ class UserRepository
     }
     public function getUser(int $id): ?User
     {
-        return $this->model->find($id);
+        return $this->model->with(['followers', 'following'])
+            ->where('id', $id)->first();
     }
 
-    public function update(User $user, array $data): User
+    public function update(User $user, array $data): ?User
     {
         $user->profile()->update($data);
         return $user;
@@ -44,5 +44,11 @@ class UserRepository
     {
         $blogs = $user->blogs;
         return $blogs;
+    }
+
+    public function likes(User $user): ?Collection
+    {
+        $userLikes = $user->likedBlogs;
+        return $userLikes;
     }
 }

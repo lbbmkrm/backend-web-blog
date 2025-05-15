@@ -7,24 +7,35 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use App\Repositories\FollowRepository;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
 
 class UserService
 {
-    protected $userRepo;
-    protected $followRepo;
+    protected UserRepository $userRepo;
+    protected FollowRepository $followRepo;
     public function __construct(UserRepository $userRepository, FollowRepository $followRepository)
     {
         $this->userRepo = $userRepository;
         $this->followRepo = $followRepository;
     }
 
-
-    public function getAllUsers(): Collection
+    public function authorizedCheck(string $ability, User $model): void
     {
-        return $this->userRepo->getAll();
+        if (Gate::denies($ability, $model)) {
+            throw new Exception('unauthorized', 403);
+        }
+    }
+    public function getAllUsers(): ?Collection
+    {
+        try {
+            $users = $this->userRepo->getAll();
+            return $users;
+        } catch (Exception $e) {
+            throw new Exception('failed retrieve users', 500);
+        }
     }
 
     public function getCurrentUser(): User
@@ -39,25 +50,21 @@ class UserService
         }
         return $user;
     }
-    public function selfId(int $userId, int $currentUserId): bool
+    public function isSameUser(int $userId, int $currentUserId): bool
     {
-        if ($userId === $currentUserId) {
-            return true;
-        }
-        return false;
+        return $userId === $currentUserId;
     }
 
-    public function updateUser(User $user, array $request)
+    public function updateUser(User $user, array $request): ?User
     {
         try {
-            if ($request['avatar']) {
-            }
+            $this->authorizedCheck('update', $user);
             $data = [
                 'bio' => $request['bio'] ?: null,
                 'avatar' => $request['avatar'] ?: null,
                 'phone' => $request['phone'] ?: null
             ];
-            if (isset($request['avatar']) && $request['avatar'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($request['avatar'])) {
 
                 if ($user->avatar) {
                     Storage::disk('public')->delete($user->avatar);
@@ -79,7 +86,7 @@ class UserService
     {
         $currentUser = $this->getCurrentUser();
         $user = $this->userRepo->getUser($userId);
-        if ($this->selfId($user->id, $currentUser->id)) {
+        if ($this->isSameUser($user->id, $currentUser->id)) {
             throw new Exception('Cannot follow yourself', 400);
         }
         if ($this->followRepo->exist($user->id, $currentUser->id)) {
@@ -95,11 +102,11 @@ class UserService
         }
     }
 
-    public function unFollow(int $userId)
+    public function unfollow(int $userId)
     {
         $user = $this->getUser($userId);
         $currentUser = $this->getCurrentUser();
-        if ($this->selfId($userId, $currentUser->id)) {
+        if ($this->isSameUser($userId, $currentUser->id)) {
             throw new Exception('You cannot unfollow yourself.', 400);
         }
         if ($this->followRepo->doesntExist($user->id, $currentUser->id)) {
@@ -138,14 +145,25 @@ class UserService
     }
 
 
-    public function getUserBlog(int $id)
+    public function getUserBlogs(int $id): ?Collection
     {
-        $user = $this->getUser($id);
         try {
+            $user = $this->getUser($id);
             $blogs = $this->userRepo->blogs($user);
             return $blogs;
         } catch (Exception $e) {
             throw new Exception("Failed retrive user's blog", 500);
+        }
+    }
+
+    public function getUserLikedBlogs(int $userId): ?Collection
+    {
+        try {
+            $user = $this->getUser($userId);
+            $liked = $this->userRepo->likes($user);
+            return $liked;
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage() ?: "failed retrieve user's liked blog", $e->getCode() ?: 500);
         }
     }
 }

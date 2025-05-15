@@ -55,6 +55,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function is_admin(): bool
+    {
+        return $this->is_admin;
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class, 'user_id', 'id');

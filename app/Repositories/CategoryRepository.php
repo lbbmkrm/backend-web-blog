@@ -7,10 +7,7 @@ use Illuminate\Support\Collection;
 
 class CategoryRepository
 {
-    /**
-     * @var \App\Models\Category
-     */
-    protected $model;
+    protected Category $model;
 
     public function __construct(Category $category)
     {
@@ -22,12 +19,12 @@ class CategoryRepository
         return $this->model->all();
     }
 
-    public function getSingle(int $id): ?Category
+    public function getById(int $id): ?Category
     {
-        return $this->model->find($id);
+        return $this->model->where('id', $id)->first();
     }
 
-    public function blogs(Category $category)
+    public function blogs(Category $category): ?Collection
     {
         return $category->blogs;
     }

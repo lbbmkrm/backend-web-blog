@@ -16,7 +16,8 @@ class CommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'user' => $this->user->name,
+            'id' => $this->id,
+            'user' => $this->user->username,
             'content' => $this->content,
             'createdAt' => $this->created_at->format('d-m-Y H:i'),
         ];

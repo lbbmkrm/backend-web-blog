@@ -6,156 +6,124 @@ use App\Http\Requests\User\UserUpdateRequest;
 use App\Http\Resources\User\UserResource;
 use App\Http\Resources\User\UserSimpleResource;
 use App\Http\Resources\User\UsersResource as AllUsersResource;
-use App\Models\Like;
 use Illuminate\Http\Request;
 use App\Services\UserService;
 use Exception;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    use AuthorizesRequests;
-    private $userService;
+    private UserService $userService;
     public function __construct(UserService $service)
     {
         $this->userService = $service;
     }
-    public function likes()
-    {
-        $likes = Like::all();
-        return response()->json([
-            'data' => $likes->toArray()
-        ]);
-    }
-    public function index()
+    public function index(): JsonResponse
     {
         try {
             $users = $this->userService->getAllUsers();
-            return response()->json([
-                'message' => 'Success get all users',
-                'data' => AllUsersResource::collection($users)
-            ]);
+            return $this->successResponse(
+                'users retrieved successfully',
+                AllUsersResource::collection($users)
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Failed get all users',
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function show(int $id)
+    public function show(int $id): JsonResponse
     {
-
         try {
             $user = $this->userService->getUser($id);
-            return response()->json([
-                'message' => 'success',
-                'data' => new UserResource($user)
-            ]);
+            return $this->successResponse(
+                'User retrieved successfully',
+                new UserResource($user)
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function update(int $id, UserUpdateRequest $request)
+    public function update(int $id, UserUpdateRequest $request): JsonResponse
     {
         $requestValid = $request->validated();
         try {
             $user = $this->userService->getUser($id);
-            $this->authorize('update', $user);
             $updatedUser = $this->userService->updateUser($user, $requestValid);
-            return response()->json([
-                'message' => 'updated user success',
-                'user' => new UserResource($updatedUser)
-            ]);
+            return $this->successResponse(
+                'User updated successfully',
+                new UserResource($updatedUser)
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], $e->getCode());
+            return $this->failedResponse($e);
         }
     }
 
-
-
-    public function follow(int $id)
+    public function follow(int $id): JsonResponse
     {
         try {
             $this->userService->follow($id);
-            return response()->json([
-                'message' => 'Success following'
-            ]);
+            return $this->successResponse('Successfully followed user');
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function unFollow(int $id)
+    public function unfollow(int $id): JsonResponse
     {
         try {
             $this->userService->unFollow($id);
-            return response()->json([
-                'message' => 'Success un-following'
-            ]);
+            return $this->successResponse('Successfully unfollowed user');
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode());
+            return $this->failedResponse($e);
         }
     }
 
-    public function followers(int $id)
+    public function followers(int $id): JsonResponse
     {
         try {
             $followers = $this->userService->getFollowers($id);
             $message = $followers->isEmpty()
                 ? 'User has no followers.' : 'Followers retrieved successfully.';
-            return response()->json([
-                'message' => $message,
-                'followers' => UserSimpleResource::collection($followers)
-            ]);
+            return $this->successResponse($message, UserSimpleResource::collection($followers));
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode());
+            return $this->failedResponse($e);
         }
     }
 
-    public function following(int $id)
+    public function following(int $id): JsonResponse
     {
         try {
             $following = $this->userService->getFollowing($id);
             $message = $following->isEmpty()
-                ? 'no following data' : 'success retrive following data';
-            return response()->json([
-                'message' => $message,
-                'following' => UserSimpleResource::collection($following)
-            ]);
+                ? 'No following data available' : 'Successfully retrieved following data';
+            return $this->successResponse($message, UserSimpleResource::collection($following));
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode());
+            return $this->failedResponse($e);
         }
     }
 
 
 
-    public function blogs(int $id)
+    public function getBlogsByUser(int $id): JsonResponse
     {
         try {
-            $blogs = $this->userService->getUserBlog($id);
+            $blogs = $this->userService->getUserBlogs($id);
             $message = $blogs->isEmpty()
-                ? "no user's blogs" : "Success retrive user's blog";
-            return response()->json([
-                'message' => $message,
-                'blogs' => $blogs->toArray()
-            ]);
+                ? "No blogs found for this user" : "Successfully retrieved user's blogs";
+            return $this->successResponse($message, $blogs->toArray());
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode());
+            return $this->failedResponse($e);
+        }
+    }
+
+    public function likes(int $id): JsonResponse
+    {
+        try {
+            $liked = $this->userService->getUserLikedBlogs($id);
+            return $this->successResponse("Successfully retrieved user's liked blogs", $liked->toArray());
+        } catch (Exception $e) {
+            return $this->failedResponse($e);
         }
     }
 }

@@ -41,11 +41,11 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             Route::get('/users/{id}', 'show');
             Route::patch('/users/{id}', 'update');
             Route::post('/users/{id}/follow', 'follow');
-            Route::delete('/users/{id}/unfollow', 'unFollow');
+            Route::delete('/users/{id}/follow', 'unfollow');
             Route::get('/users/{id}/followers', 'followers');
             Route::get('/users/{id}/following', 'following');
-            Route::get('/users/likes', 'likes');
-            Route::get('users/{id}/blogs', 'blogs');
+            Route::get('/users/{id}/likes', 'likes');
+            Route::get('users/{id}/blogs', 'getBlogsByUser');
         });
 
         Route::controller(BlogController::class)->group(function () {

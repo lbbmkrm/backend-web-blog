@@ -3,37 +3,34 @@
 namespace App\Repositories;
 
 use App\Models\Blog;
+use Illuminate\Database\Eloquent\Collection;
 
 class BlogRepository
 {
-    protected $model;
+    protected Blog $model;
 
     public function __construct(Blog $blog)
     {
         $this->model = $blog;
     }
 
-    public function getAll()
+    public function getAll(): ?Collection
     {
-        return $this->model->with(['user', 'category'])->get();
+        return $this->model->with(['user', 'category'])
+            ->orderBy('created_at', 'desc')->get();
     }
 
-    public function find(int $id): ?Blog
+    public function getById(int $id, $relation = []): ?Blog
     {
-        return $this->model->findOrFail($id);
+        return $this->model->with($relation)->where('id', $id)->first();
     }
 
-    public function findWithRelations(int $id)
-    {
-        return $this->model->with(['category', 'user', 'comments'])->findOrFail($id);
-    }
-
-    public function create(array $data)
+    public function create(array $data): ?Blog
     {
         return $this->model->create($data);
     }
 
-    public function update(Blog $blog, array $data)
+    public function update(Blog $blog, array $data): ?Blog
     {
         $blog->update($data);
         return $blog;

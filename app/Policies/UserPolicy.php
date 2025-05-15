@@ -10,10 +10,10 @@ class UserPolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
-    {
-        return true;
-    }
+    // public function viewAny(User $user): bool
+    // {
+    //     return true;
+    // }
 
     /**
      * Determine whether the user can view the model.
@@ -28,7 +28,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user !== null;
+        return $user->is_admin();
     }
 
     /**
@@ -36,7 +36,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $model->id === $user->id;
+        return $model->id === $user->id || $user->is_admin();
     }
 
     /**
@@ -44,6 +44,6 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $model->id === $user->id;
+        return $model->id === $user->id || $user->is_admin();
     }
 }

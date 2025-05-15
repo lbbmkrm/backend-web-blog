@@ -1,13 +1,11 @@
 <?php
 
-namespace App\Http\Resources\User;
+namespace App\Http\Resources;
 
-use App\Http\Resources\Blogs\BlogSimpleResource;
-use App\Models\Like;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class UsersResource extends JsonResource
+class CategorySimpleResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,9 +16,7 @@ class UsersResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'username' => $this->username,
-            'email' => $this->email,
-            'createdAt' => $this->created_at->format('d-m-Y H:i'),
+            'name' => $this->name
         ];
     }
 }

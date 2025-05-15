@@ -26,13 +26,10 @@ class CommentRepository
     {
         $comment->delete();
     }
-    public function where(int $blogId, int $userId): Comment
+    public function findByBlogAndUser(int $blogId, int $userId): ?Comment
     {
         $comment =  $this->model->where('blog_id', '=', $blogId)
             ->where('user_id', '=', $userId)->first();
-        if (!$comment) {
-            throw new Exception('Comment not found', 404);
-        }
         return $comment;
     }
 }

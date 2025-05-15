@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Blogs;
 
+use App\Http\Resources\CategorySimpleResource;
 use App\Models\Like;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,6 @@ class BlogsResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $likeby = Like::where('blog_id', $this->id)->get('user_id');
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -26,9 +26,9 @@ class BlogsResource extends JsonResource
             'thumbnail' => $this->thumbnail,
             'createdAt' => $this->created_at->format('d-m-Y H:i'),
             'author' => new UserSimpleResource($this->whenLoaded('user')),
-            'category' => new UserSimpleResource($this->whenLoaded('category')),
+            'category' => new CategorySimpleResource($this->whenLoaded('category')),
             'likeCount' => $this->likes->count(),
-            'likesBy' => $likeby //melanggar prinsip repository pattern!
+            'likesBy' => $this->likes()->where('likes.blog_id', $this->id)->select('users.id', 'users.username')->get()
         ];
     }
 }

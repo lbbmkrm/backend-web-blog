@@ -26,11 +26,9 @@ class AuthService
             }
 
             $currentUser = $this->authRepo->currentUser();
-
             if (!$currentUser) {
                 throw new Exception('User not found!', 401);
             }
-
             $token = $currentUser->createToken('authentication_token')->plainTextToken;
 
             return ['user' => $currentUser, 'token' => $token];
@@ -50,13 +48,7 @@ class AuthService
             return $newUser;
         } catch (Exception $e) {
             DB::rollBack();
-            $message = null;
-            $code = 0;
-            if ($e->getCode() === 23000) {
-                $message = 'Email or Username already registered';
-                $code = 422;
-            }
-            throw new Exception($message ?: $e->getMessage(), $code ?:  500);
+            throw new Exception($e->getMessage() ?: 'Register failed', $e->getCode() ?:  500);
         }
     }
 

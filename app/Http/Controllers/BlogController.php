@@ -12,14 +12,11 @@ use App\Http\Resources\Blogs\BlogsResource;
 use App\Http\Requests\Blogs\StoreBlogRequest;
 use App\Http\Requests\Blogs\UpdateBlogRequest;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 
-/**
- * @method void authorize(string $ability, mixed $arguments)
- */
 class BlogController extends Controller
 {
-    use AuthorizesRequests;
-    private $blogService;
+    private BlogService $blogService;
 
     public function __construct(BlogService $blogService)
     {
@@ -27,143 +24,127 @@ class BlogController extends Controller
     }
 
     //blog route
-    public function index()
-    {
-        $blogs = $this->blogService->getAllBlogs();
-
-        return BlogsResource::collection($blogs);
-    }
-    public function show(int $blogId)
+    public function index(): JsonResponse
     {
         try {
-            $blog = $this->blogService->getSingleBlog($blogId);
-            return new BlogResource($blog);
+            $blogs = $this->blogService->getAllBlogs();
+            $message = $blogs->isEmpty() ? 'No blogs found' : 'blogs retrieved successfully';
+            return $this->successResponse(
+                $message,
+                BlogsResource::collection($blogs)
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
+        }
+    }
+    public function show(int $blogId): JsonResponse
+    {
+        try {
+            $blog = $this->blogService->getBlogDetail($blogId);
+            return $this->successResponse(
+                'success retrieve blog',
+                new BlogResource($blog)
+            );
+        } catch (Exception $e) {
+            return $this->failedResponse($e);
         }
     }
 
-    public function store(StoreBlogRequest $request)
+    public function store(StoreBlogRequest $request): JsonResponse
     {
         try {
-
             $validated = $request->validated();
 
             $blog = $this->blogService->createBlog($validated);
 
-            return response()->json([
-                'message' => 'Blog created successfully',
-                'data' => new BlogResource($blog->load(['user', 'category']))
-            ], 201);
+            return $this->successResponse(
+                'success create blog',
+                new BlogResource($blog),
+                201
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
 
-    public function update(UpdateBlogRequest $request, int $blogId)
+    public function update(UpdateBlogRequest $request, int $blogId): JsonResponse
     {
         try {
-            $blog = $this->blogService->getSingleBlog($blogId);
-            $this->authorize('update', $blog);
+            $blog = $this->blogService->getBlogDetail($blogId);
             $validated = $request->validated();
             $thumbnail = $request->file('thumbnail');
             $updatedBlog = $this->blogService->updateBlog($blog, $validated, $thumbnail);
-            return response()->json([
-                'message' => 'Blog updated successfully',
-                'data' => new BlogResource($updatedBlog)
-            ], 200);
+            return $this->successResponse(
+                'success update blog',
+                new BlogResource($updatedBlog)
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function destroy(int $id)
+    public function destroy(int $id): JsonResponse
     {
         try {
-            $blog = $this->blogService->getSingleBlog($id);
-            $this->authorize('delete', $blog);
+            $this->blogService->removeBlog($id);
 
-            $this->blogService->deleteBlog($id);
-
-            return response()->json([
-                'message' => 'Blog deleted successfully'
-            ], 200);
+            return $this->successResponse('success delete blog');
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
     //comment route
-    public function addComment(CommentRequest $request, int $id)
+    public function addComment(CommentRequest $request, int $id): JsonResponse
     {
         try {
             $validated = $request->validated();
-            $comment = $this->blogService->createComment($id, $validated);
+            $comment = $this->blogService->addComment($id, $validated);
 
-            return response()->json([
-                'message' => 'Comment added successfully',
-                'data' => new CommentResource($comment)
-            ]);
+            return $this->successResponse(
+                'success add comment',
+                new CommentResource($comment),
+                201
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'code' => $e->getCode()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function deleteComment(int $id)
+    public function deleteComment(int $id): JsonResponse
     {
         try {
-            $this->blogService->deleteComment($id);
-            return response()->json([
-                'message' => 'Comment deleted successfully',
-            ]);
+            $this->blogService->removeComment($id);
+            return $this->successResponse('success delete comment');
         } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Comment failed to delete'
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
 
     //like route
-    public function like(int $id)
+    public function like(int $id): JsonResponse
     {
-        Log::info('createLike called', ['blogId' => $id]);
         try {
             $this->blogService->addLike($id);
-
-            return response()->json([
-                'message' => 'Blog liked successfully'
-            ], 201);
+            return $this->successResponse(
+                'success liked blog',
+                [],
+                201
+            );
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 
-    public function unLike(int $id)
+    public function unLike(int $id): JsonResponse
     {
         try {
             $this->blogService->removeLike($id);
-            return response()->json([
-                'message' => 'Success unlike'
-            ]);
+            return $this->successResponse('success unlike blog');
         } catch (Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], $e->getCode() ?: 500);
+            return $this->failedResponse($e);
         }
     }
 }

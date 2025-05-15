@@ -15,9 +15,12 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            'id' => $this->id,
             'username' => $this->username,
             'email' => $this->email,
             'detail' => new ProfileResource($this->profile),
+            'followers' => FollowerResource::collection($this->whenLoaded('followers')),
+            'following' => FollowerResource::collection($this->whenLoaded('following'))
         ];
     }
 }

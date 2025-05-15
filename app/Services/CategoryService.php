@@ -9,46 +9,43 @@ use Illuminate\Support\Collection;
 
 class CategoryService
 {
-    protected $categoryRepo;
+    protected CategoryRepository $categoryRepo;
     public function __construct(CategoryRepository $categoryRepository)
     {
         $this->categoryRepo = $categoryRepository;
     }
 
-    public function getAllCategories(): ?Collection
+    public function listCategories(): ?Collection
     {
         try {
             $category = $this->categoryRepo->getAll();
-            if ($category->isEmpty()) {
-                throw new Exception('no category found', 200);
-            }
             return $category;
         } catch (Exception $e) {
-            throw new Exception('Failed to retrive category', 500);
+            throw new Exception($e->getMessage() ?: 'Failed to retrieve categories', $e->getCode() ?: 500);
         }
     }
 
-    public function getSingleCategories(int $id)
+    public function getCategoryDetail(int $id): ?Category
     {
         try {
-            $category = $this->getSingleCategories($id);
+            $category = $this->categoryRepo->getById($id);
             if (!$category) {
-                throw new Exception('no category', 404);
+                throw new Exception('Category not found', 404);
             }
             return $category;
         } catch (Exception $e) {
-            throw new Exception('failed to get category', 500);
+            throw new Exception($e->getMessage() ?: 'failed to get category', $e->getCode() ?: 500);
         }
     }
 
-    public function getCategoryBlogs(int $id)
+    public function getCategoryByBlogs(int $id): ?Collection
     {
-        $categories = $this->getSingleCategories($id);
+        $categories = $this->getCategoryDetail($id);
         try {
             $blogs = $this->categoryRepo->blogs($categories);
             return $blogs;
         } catch (Exception $e) {
-            throw new Exception('failed to retrive blogs', 500);
+            throw new Exception('Failed to retrieve blogs for category', 500);
         }
     }
 }
