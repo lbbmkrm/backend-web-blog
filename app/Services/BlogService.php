@@ -5,7 +5,6 @@ namespace App\Services;
 use Exception;
 use App\Models\Blog;
 use App\Models\User;
-use App\Models\BlogImage;
 use App\Models\Comment;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +32,7 @@ class BlogService
 
     private function getUser(): ?User
     {
-        return Auth::user();
+        return Auth::guard('sanctum')->user();
     }
 
     public function authorizedCheck(string $ability, Blog|Comment $model): void
@@ -103,7 +102,7 @@ class BlogService
     public function updateBlog(Blog $blog, array $data, $imgPath = null): ?Blog
     {
         try {
-            $this->authorizedCheck('update', $blog);
+            Gate::authorize('update', $blog);
             DB::beginTransaction();
             if ($imgPath && $blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
@@ -126,12 +125,11 @@ class BlogService
             throw new Exception($e->getMessage() ?: 'failed to update', $e->getCode() ?: 500);
         }
     }
-
     public function removeBlog(int $blogId): void
     {
         try {
             $blog = $this->findBlogOrFail($blogId);
-            $this->authorizedCheck('delete', $blog);
+            Gate::authorize('delete', $blog);
             if ($blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
             }
@@ -172,7 +170,7 @@ class BlogService
             if (!$comment) {
                 throw new Exception('Comment not found', 404);
             }
-            $this->authorizedCheck('delete', $comment);
+            Gate::authorize('delete', $comment);
             $this->commentRepo->delete($comment);
         } catch (Exception $e) {
             throw new Exception($e->getMessage() ?: 'Comment failed to delete', $e->getCode() ?: 500);

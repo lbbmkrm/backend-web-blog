@@ -68,7 +68,7 @@ class AuthRepository
 
     public function currentUser(): ?User
     {
-        return Auth::user();
+        return Auth::guard('sanctum')->user();
     }
 
     public function existUsername(string $username): bool

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\LogRequestMiddleware;
@@ -61,6 +62,12 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             //Blog like
             Route::post('/blogs/{id}/likes', 'like');
             Route::delete('/blogs/{id}/likes', 'unlike');
+        });
+
+        Route::controller(BookmarkController::class)->group(function () {
+            Route::get('/bookmarks', 'index');
+            Route::post('/bookmarks', 'store');
+            Route::delete('/bookmarks/{id}', 'destroy');
         });
     });
 });

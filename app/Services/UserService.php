@@ -21,13 +21,6 @@ class UserService
         $this->userRepo = $userRepository;
         $this->followRepo = $followRepository;
     }
-
-    public function authorizedCheck(string $ability, User $model): void
-    {
-        if (Gate::denies($ability, $model)) {
-            throw new Exception('unauthorized', 403);
-        }
-    }
     public function getAllUsers(): ?Collection
     {
         try {
@@ -36,11 +29,6 @@ class UserService
         } catch (Exception $e) {
             throw new Exception('failed retrieve users', 500);
         }
-    }
-
-    public function getCurrentUser(): User
-    {
-        return Auth::user();
     }
     public function getUser(int $userId): User
     {
@@ -58,7 +46,7 @@ class UserService
     public function updateUser(User $user, array $request): ?User
     {
         try {
-            $this->authorizedCheck('update', $user);
+            Gate::authorize('update', $user);
             $data = [
                 'bio' => $request['bio'] ?: null,
                 'avatar' => $request['avatar'] ?: null,
@@ -84,7 +72,7 @@ class UserService
 
     public function follow(int $userId)
     {
-        $currentUser = $this->getCurrentUser();
+        $currentUser = Auth::guard('sanctum')->user();
         $user = $this->userRepo->getUser($userId);
         if ($this->isSameUser($user->id, $currentUser->id)) {
             throw new Exception('Cannot follow yourself', 400);
@@ -105,7 +93,7 @@ class UserService
     public function unfollow(int $userId)
     {
         $user = $this->getUser($userId);
-        $currentUser = $this->getCurrentUser();
+        $currentUser = Auth::guard('sanctum')->user();
         if ($this->isSameUser($userId, $currentUser->id)) {
             throw new Exception('You cannot unfollow yourself.', 400);
         }

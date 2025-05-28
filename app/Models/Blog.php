@@ -40,4 +40,9 @@ class Blog extends Model
     {
         return $this->belongsToMany(User::class, 'likes', 'blog_id', 'user_id');
     }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class, 'blog_id', 'id');
+    }
 }

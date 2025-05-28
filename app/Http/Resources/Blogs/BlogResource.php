@@ -31,6 +31,7 @@ class BlogResource extends JsonResource
             'updatedAt' => $this->updated_at,
             'comments' =>  CommentResource::collection(($this->whenLoaded('comments'))),
             'likesCount' => $this->likes()->count(),
+            'likesBy' => $this->likes()->where('likes.blog_id', $this->id)->select('users.id', 'users.username')->get()
         ];
     }
 }

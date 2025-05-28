@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Repositories\AuthRepository;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -9,14 +10,14 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
-    protected $authRepo;
+    protected AuthRepository $authRepo;
 
     public function __construct(AuthRepository $authRepository)
     {
         $this->authRepo = $authRepository;
     }
 
-    public function login(array $requestData)
+    public function login(array $requestData): array
     {
         try {
             $credential = $requestData['username'] ?? $requestData['email'];
@@ -37,7 +38,7 @@ class AuthService
         }
     }
 
-    public function register(array $requestData)
+    public function register(array $requestData): array
     {
         try {
             DB::beginTransaction();
@@ -52,7 +53,7 @@ class AuthService
         }
     }
 
-    public function logout()
+    public function logout(): void
     {
         try {
             $user = $this->authRepo->currentUser();
@@ -69,7 +70,7 @@ class AuthService
         }
     }
 
-    public function currentUser()
+    public function currentUser(): User
     {
         try {
             $user = $this->authRepo->currentUser();
@@ -82,7 +83,7 @@ class AuthService
         }
     }
 
-    public function checkUsername(string $username)
+    public function checkUsername(string $username): bool
     {
         try {
             $existed = $this->authRepo->existUsername($username);
@@ -92,7 +93,7 @@ class AuthService
         }
     }
 
-    public function checkEmail(string $email)
+    public function checkEmail(string $email): bool
     {
         try {
             $existed = $this->authRepo->existEmail($email);
@@ -102,7 +103,7 @@ class AuthService
         }
     }
 
-    public function checkStudentNumber(int $studentNumber)
+    public function checkStudentNumber(int $studentNumber): bool
     {
         try {
             $existed = $this->authRepo->verifiedStudent($studentNumber);
