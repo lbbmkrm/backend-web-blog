@@ -105,7 +105,7 @@ class UserController extends Controller
 
 
 
-    public function getBlogsByUser(int $id): JsonResponse
+    public function indexBlogsByUser(int $id): JsonResponse
     {
         try {
             $blogs = $this->userService->getUserBlogs($id);

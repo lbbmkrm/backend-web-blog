@@ -2,23 +2,27 @@
 
 namespace App\Repositories;
 
+use App\Models\Profile;
 use Exception;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\VerifiedStudentNumber;
+use Illuminate\Database\Eloquent\MassAssignmentException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 
 class AuthRepository
 {
-    private $model;
-    private $verifiedStudent;
+    protected User $user;
+    protected VerifiedStudentNumber $verifiedStudent;
+    protected Profile $profile;
 
-    public function __construct(User $user, VerifiedStudentNumber $student)
+    public function __construct(User $user, VerifiedStudentNumber $student, Profile $profile)
     {
-        $this->model = $user;
+        $this->user = $user;
         $this->verifiedStudent = $student;
+        $this->profile = $profile;
     }
 
     public function login(string $usernameOrEmail, string $password): bool
@@ -31,39 +35,28 @@ class AuthRepository
 
     public function register(array $data): User
     {
-        if ($this->model->where('username', $data['username'])->exists()) {
-            throw new Exception('username already exists', 409);
-        }
-        if ($this->model->where('email', $data['email'])->exists()) {
-            throw new Exception('email already exists', 409);
-        }
         try {
-            DB::beginTransaction();
-            $newUser = $this->model->create([
-                'username' => $data['username'],
-                'email' => $data['email'],
-                'password' => bcrypt($data['password']),
-            ]);
-
-            $existStudent = VerifiedStudentNumber::where('student_id_number', $data['student_number'])->first();
-            if (!$existStudent) {
-                throw new Exception('Student not found', 404);
-            }
-            $newUser->profile()->create([
-                'user_id' => $newUser->id,
-                'student_number' => $data['student_number'],
-                'name' => $existStudent->name,
-                'university' => $existStudent->university,
-                'faculty' => $existStudent->faculty,
-                'study_program' => $existStudent->study_program,
-                'batch' => $existStudent->batch
-            ]);
-            DB::commit();
+            return $this->user->create($data);
+        } catch (MassAssignmentException $e) {
+            throw new Exception('Data yang dikirim tidak valid.', 422);
+        } catch (QueryException $e) {
+            throw new Exception('Terjadi kesalahan pada database saat register.', 500);
         } catch (Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage(), $e->getCode());
+            throw new Exception('Terjadi kesalahan saat register.', 500);
         }
-        return $newUser;
+    }
+
+    public function createProfileUser(array $data): ?Profile
+    {
+        try {
+            return $this->profile->create($data);
+        } catch (MassAssignmentException $e) {
+            throw new Exception('Data yang dikirim tidak valid.', 422);
+        } catch (QueryException $e) {
+            throw new Exception('Terjadi kesalahan pada database saat membuat data profile.', 500);
+        } catch (Exception $e) {
+            throw new Exception('Terjadi kesalahan saat membuat data profile.', 500);
+        }
     }
 
     public function currentUser(): ?User
@@ -71,17 +64,26 @@ class AuthRepository
         return Auth::guard('sanctum')->user();
     }
 
+    public function getVerifiedStudent(string $id): ?VerifiedStudentNumber
+    {
+        try {
+            return $this->verifiedStudent->where('student_id_number', $id)->firstOrFail();
+        } catch (ModelNotFoundException $e) {
+            throw new Exception('Mahasiswa tidak ditemukan', 404);
+        }
+    }
+
     public function existUsername(string $username): bool
     {
-        return $this->model->where('username', $username)->exists();
+        return $this->user->where('username', $username)->exists();
     }
 
     public function existEmail(string $email): bool
     {
-        return $this->model->where('email', $email)->exists();
+        return $this->user->where('email', $email)->exists();
     }
 
-    public function verifiedStudent(int $studentNumber): bool
+    public function existsStudent(int $studentNumber): bool
     {
         return $this->verifiedStudent->where('student_id_number', $studentNumber)->exists();
     }

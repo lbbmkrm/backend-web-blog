@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 class BookmarkService
 {
     protected BookmarkRepository $bookmarkRepo;
+
     public function __construct(BookmarkRepository $bookmarkRepository)
     {
         $this->bookmarkRepo = $bookmarkRepository;
@@ -30,7 +31,7 @@ class BookmarkService
             return $this->bookmarkRepo->getAllByUserId($user->id);
         } catch (Exception $e) {
             throw new Exception(
-                $e->getMessage() ?: 'Failed to retrieve bookmarks',
+                $e->getMessage() ?: 'Gagal mengambil data bookmark.',
                 $e->getCode() ?: 500
             );
         }
@@ -41,19 +42,22 @@ class BookmarkService
         try {
             $user = $this->getUser();
             DB::beginTransaction();
+
             if ($this->bookmarkRepo->exist($user->id, $blogId)) {
-                throw new Exception('Blog already exist', 400);
+                throw new Exception('Blog sudah ditandai sebagai bookmark.', 400);
             }
+
             $newBookmark = $this->bookmarkRepo->create([
                 'user_id' => $user->id,
                 'blog_id' => $blogId
             ]);
+
             DB::commit();
             return $newBookmark;
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception(
-                $e->getMessage() ?: 'Failed to create bookmark',
+                $e->getMessage() ?: 'Gagal menambahkan bookmark.',
                 $e->getCode() ?: 500
             );
         }
@@ -64,13 +68,15 @@ class BookmarkService
         try {
             $bookmark = $this->bookmarkRepo->getById($bookmarkId);
             $user = $this->getUser();
+
             if ($bookmark->user_id !== $user->id) {
-                throw new Exception('Unauthorized', 403);
+                throw new Exception('Anda tidak memiliki akses untuk menghapus bookmark ini.', 403);
             }
+
             return $this->bookmarkRepo->delete($bookmark);
         } catch (Exception $e) {
             throw new Exception(
-                $e->getMessage() ?: 'Failed to delete bookmark',
+                $e->getMessage() ?: 'Gagal menghapus bookmark.',
                 $e->getCode() ?: 500
             );
         }

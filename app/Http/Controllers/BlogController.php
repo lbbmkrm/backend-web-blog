@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use Exception;
 use App\Services\BlogService;
-use Illuminate\Support\Facades\Log;
 use App\Http\Requests\CommentRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\Blogs\BlogResource;
 use App\Http\Resources\Blogs\BlogsResource;
 use App\Http\Requests\Blogs\StoreBlogRequest;
 use App\Http\Requests\Blogs\UpdateBlogRequest;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 
 class BlogController extends Controller
@@ -28,7 +26,8 @@ class BlogController extends Controller
     {
         try {
             $blogs = $this->blogService->getAllBlogs();
-            $message = $blogs->isEmpty() ? 'No blogs found' : 'blogs retrieved successfully';
+            $message = $blogs->isEmpty() ? 'Belum ada blog yang tersedia.'
+                : 'Berhasil mengambil daftar blog.';
             return $this->successResponse(
                 $message,
                 BlogsResource::collection($blogs)
@@ -42,7 +41,7 @@ class BlogController extends Controller
         try {
             $blog = $this->blogService->getBlogDetail($blogId);
             return $this->successResponse(
-                'success retrieve blog',
+                'Berhasil mengambil detail blog.',
                 new BlogResource($blog)
             );
         } catch (Exception $e) {
@@ -58,7 +57,7 @@ class BlogController extends Controller
             $blog = $this->blogService->createBlog($validated);
 
             return $this->successResponse(
-                'success create blog',
+                'Blog berhasil dibuat.',
                 new BlogResource($blog),
                 201
             );
@@ -76,7 +75,7 @@ class BlogController extends Controller
             $thumbnail = $request->file('thumbnail');
             $updatedBlog = $this->blogService->updateBlog($blog, $validated, $thumbnail);
             return $this->successResponse(
-                'success update blog',
+                'Blog berhasil diperbarui.',
                 new BlogResource($updatedBlog)
             );
         } catch (Exception $e) {
@@ -89,7 +88,7 @@ class BlogController extends Controller
         try {
             $this->blogService->removeBlog($id);
 
-            return $this->successResponse('success delete blog');
+            return $this->successResponse('Blog berhasil dihapus.');
         } catch (Exception $e) {
             return $this->failedResponse($e);
         }
@@ -103,7 +102,7 @@ class BlogController extends Controller
             $comment = $this->blogService->addComment($id, $validated);
 
             return $this->successResponse(
-                'success add comment',
+                'Komentar berhasil ditambahkan.',
                 new CommentResource($comment),
                 201
             );
@@ -116,7 +115,7 @@ class BlogController extends Controller
     {
         try {
             $this->blogService->removeComment($id);
-            return $this->successResponse('success delete comment');
+            return $this->successResponse('Komentar berhasil dihapus.');
         } catch (Exception $e) {
             return $this->failedResponse($e);
         }
@@ -129,7 +128,7 @@ class BlogController extends Controller
         try {
             $this->blogService->addLike($id);
             return $this->successResponse(
-                'success liked blog',
+                'Blog berhasil disukai.',
                 [],
                 201
             );
@@ -142,7 +141,7 @@ class BlogController extends Controller
     {
         try {
             $this->blogService->removeLike($id);
-            return $this->successResponse('success unlike blog');
+            return $this->successResponse('Suka pada blog berhasil dihapus.');
         } catch (Exception $e) {
             return $this->failedResponse($e);
         }

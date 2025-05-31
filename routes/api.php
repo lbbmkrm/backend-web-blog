@@ -31,7 +31,7 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
     Route::controller(CategoryController::class)->group(function () {
         Route::get('/categories', 'index');
         Route::get('/categories/{id}', 'show');
-        Route::get('/categories/{id}/blogs');
+        Route::get('/categories/{id}/blogs', 'blogs');
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -46,7 +46,7 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             Route::get('/users/{id}/followers', 'followers');
             Route::get('/users/{id}/following', 'following');
             Route::get('/users/{id}/likes', 'likes');
-            Route::get('users/{id}/blogs', 'getBlogsByUser');
+            Route::get('/users/{id}/blogs', 'indexBlogsByUser');
         });
 
         Route::controller(BlogController::class)->group(function () {

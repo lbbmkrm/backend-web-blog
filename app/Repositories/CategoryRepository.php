@@ -2,8 +2,10 @@
 
 namespace App\Repositories;
 
+use Exception;
 use App\Models\Category;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CategoryRepository
 {
@@ -21,11 +23,15 @@ class CategoryRepository
 
     public function getById(int $id): ?Category
     {
-        return $this->model->where('id', $id)->first();
+        try {
+            return $this->model->findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            throw new Exception('Category tidak ditemukan', 404);
+        }
     }
 
     public function blogs(Category $category): ?Collection
     {
-        return $category->blogs;
+        return $category->blogs->with(['user', 'category'])->get();
     }
 }

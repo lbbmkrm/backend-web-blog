@@ -24,11 +24,11 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
         try {
-            $user = $this->authService->login($credentials);
+            $result = $this->authService->login($credentials);
             return response()->json([
                 'message' => 'Login Successfully',
-                'user' => new LoginResource($user['user']),
-                'token' => $user['token']
+                'user' => new LoginResource($result['user']),
+                'token' => $result['token']
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -41,11 +41,9 @@ class AuthController extends Controller
     public function register(RegisterRequest $request)
     {
 
-        $data = $request->validated();
         try {
-            DB::beginTransaction();
+            $data = $request->validated();
             $newUser = $this->authService->register($data);
-            DB::commit();
             return response()->json([
                 'message' => 'Success register',
                 'userId' => $newUser['user']['id'],
@@ -53,7 +51,6 @@ class AuthController extends Controller
                 'user' => new LoginResource($newUser['user'])
             ], 201);
         } catch (Exception $e) {
-            DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
             ], $e->getCode());
@@ -128,7 +125,7 @@ class AuthController extends Controller
     public function checkStudentNumber(Request $request)
     {
         $validated = $request->validate([
-            'student_id_number' => 'integer'
+            'student_id_number' => 'required|string'
         ]);
         $studentNumber = $validated['student_id_number'];
         try {

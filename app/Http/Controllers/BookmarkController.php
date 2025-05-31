@@ -12,6 +12,7 @@ use App\Http\Resources\BookmarkResource;
 class BookmarkController extends Controller
 {
     private BookmarkService $bookmarkService;
+
     public function __construct(BookmarkService $bookmarkService)
     {
         $this->bookmarkService = $bookmarkService;
@@ -21,7 +22,10 @@ class BookmarkController extends Controller
     {
         try {
             $bookmarks = $this->bookmarkService->getAll();
-            $message = $bookmarks->isEmpty() ? 'User has no bookmarks' : 'success';
+            $message = $bookmarks->isEmpty()
+                ? 'Pengguna belum memiliki bookmark.'
+                : 'Data bookmark berhasil diambil.';
+
             return $this->successResponse(
                 $message,
                 BookmarkResource::collection($bookmarks)
@@ -36,8 +40,9 @@ class BookmarkController extends Controller
         try {
             $validatedRequest = $request->validated();
             $bookmark = $this->bookmarkService->createBookmark($validatedRequest['blog_id']);
+
             return $this->successResponse(
-                'Success added bookmark',
+                'Bookmark berhasil ditambahkan.',
                 new BookmarkResource($bookmark),
                 201
             );
@@ -51,7 +56,8 @@ class BookmarkController extends Controller
         try {
             $this->bookmarkService->deleteBookmark($id);
             return response()->json([
-                'success' => true
+                'success' => true,
+                'message' => 'Bookmark berhasil dihapus.'
             ]);
         } catch (Exception $e) {
             return $this->failedResponse($e);

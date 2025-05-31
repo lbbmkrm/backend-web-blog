@@ -40,9 +40,9 @@ class CategoryService
 
     public function getCategoryByBlogs(int $id): ?Collection
     {
-        $categories = $this->getCategoryDetail($id);
+        $category = $this->getCategoryDetail($id);
         try {
-            $blogs = $this->categoryRepo->blogs($categories);
+            $blogs = $this->categoryRepo->blogs($category);
             return $blogs;
         } catch (Exception $e) {
             throw new Exception('Failed to retrieve blogs for category', 500);

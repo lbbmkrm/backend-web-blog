@@ -2,8 +2,11 @@
 
 namespace App\Repositories;
 
-use App\Models\Comment;
 use Exception;
+use App\Models\Comment;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\Eloquent\MassAssignmentException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CommentRepository
 {
@@ -14,22 +17,34 @@ class CommentRepository
     }
     public function create(array $data): Comment
     {
-        return $this->model->create($data);
+        try {
+            return $this->model->create($data);
+        } catch (MassAssignmentException $e) {
+            throw new Exception('Data yang dikirim tidak valid.', 422);
+        } catch (QueryException $e) {
+            throw new Exception('Terjadi kesalahan pada database saat membuat komentar.', 500);
+        } catch (Exception $e) {
+            throw new Exception('Terjadi kesalahan saat membuat komentar.', 500);
+        }
     }
 
-    public function find(int $id): Comment|null
+    public function find(int $id): Comment
     {
-        return $this->model->findOrFail($id);
+        try {
+            return $this->model->with(['user'])->findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            throw new Exception('Komentar tidak ditemukan', 404);
+        }
     }
 
     public function delete(Comment $comment): void
     {
-        $comment->delete();
-    }
-    public function findByBlogAndUser(int $blogId, int $userId): ?Comment
-    {
-        $comment =  $this->model->where('blog_id', '=', $blogId)
-            ->where('user_id', '=', $userId)->first();
-        return $comment;
+        try {
+            $comment->delete();
+        } catch (QueryException $e) {
+            throw new Exception('Terjadi kesalahan pada database saat menghapus komentar.', 500);
+        } catch (Exception $e) {
+            throw new Exception('Terjadi kesalahan saat menghapus komentar.', 500);
+        }
     }
 }

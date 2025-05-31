@@ -13,6 +13,7 @@ use App\Repositories\LikeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Repositories\CommentRepository;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -34,20 +35,13 @@ class BlogService
     {
         return Auth::guard('sanctum')->user();
     }
-
-    public function authorizedCheck(string $ability, Blog|Comment $model): void
+    private function isAuthorized(string $ability, $arguments = [])
     {
-        if (Gate::denies($ability, $model)) {
-            throw new Exception('unauthorized', 403);
+        try {
+            Gate::authorize($ability, $arguments);
+        } catch (AuthorizationException $e) {
+            throw new Exception('Unauthorized!', 403);
         }
-    }
-    private function findBlogOrFail(int $id): ?Blog
-    {
-        $blog = $this->blogRepo->getById($id);
-        if (!$blog) {
-            throw new Exception('blog not found', 404);
-        }
-        return $blog;
     }
 
     public function getAllBlogs(): ?Collection
@@ -59,33 +53,34 @@ class BlogService
     {
         try {
             $blog = $this->blogRepo->getById($id, ['category', 'user', 'comments']);
-            if (!$blog) {
-                throw new Exception('Blog not found', 404);
-            }
             return $blog;
         } catch (Exception $e) {
-            throw new Exception($e->getMessage() ?: 'failed get blog', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal mengambil detail blog.', $e->getCode() ?: 500);
         }
     }
 
-    public function createBlog(array $data): ?Blog
+    public function createBlog(array $requestData): ?Blog
     {
         try {
             DB::beginTransaction();
-            $slug = Str::slug($data['title']);
             $user = $this->getUser();
+            $slug = Str::slug($requestData['title']);
+            $existingSlug = $this->blogRepo->model->where('slug', $slug)->exists();
+            if ($existingSlug) {
+                $slug = $slug . '-' . $user->id;
+            }
             $blogData = [
                 'user_id' => $user->id,
-                'category_id' => $data['category_id'],
-                'title' => $data['title'],
-                'content' => $data['content'],
-                'description' => $data['description'] ?? null,
+                'category_id' => $requestData['category_id'],
+                'title' => $requestData['title'],
+                'content' => $requestData['content'],
+                'description' => $requestData['description'] ?? null,
                 'slug' => $slug,
                 'created_at' => now()
             ];
 
-            if (isset($data['thumbnail'])) {
-                $blogData['thumbnail'] = $data['thumbnail']->store('thumbnails', 'public');
+            if (isset($requestData['thumbnail'])) {
+                $blogData['thumbnail'] = $requestData['thumbnail']->store('thumbnails', 'public');
             } else {
                 $blogData['thumbnail'] = null;
             }
@@ -95,14 +90,14 @@ class BlogService
             return $blog;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'failed to create blog', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal membuat blog.', $e->getCode() ?: 500);
         }
     }
 
-    public function updateBlog(Blog $blog, array $data, $imgPath = null): ?Blog
+    public function updateBlog(Blog $blog, array $data, $imgPath): ?Blog
     {
         try {
-            Gate::authorize('update', $blog);
+            $this->isAuthorized('update', $blog);
             DB::beginTransaction();
             if ($imgPath && $blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
@@ -122,27 +117,27 @@ class BlogService
             return $updatedBlog;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'failed to update', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal memperbarui blog.', $e->getCode() ?: 500);
         }
     }
     public function removeBlog(int $blogId): void
     {
         try {
-            $blog = $this->findBlogOrFail($blogId);
-            Gate::authorize('delete', $blog);
+            $blog = $this->blogRepo->getById($blogId);
+            $this->isAuthorized('delete', $blog);
             if ($blog->thumbnail) {
                 Storage::disk('public')->delete($blog->thumbnail);
             }
             $this->blogRepo->delete($blog);
         } catch (Exception $e) {
-            throw new Exception($e->getMessage() ?: 'Blog failed to delete', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal menghapus blog.', $e->getCode() ?: 500);
         }
     }
 
     public function addComment(int $blogId, array $data): ?Comment
     {
         try {
-            $blog = $this->findBlogOrFail($blogId);
+            $blog = $this->blogRepo->getById($blogId);
             $user = $this->getUser();
             DB::beginTransaction();
             $commentData = [
@@ -157,58 +152,53 @@ class BlogService
             return $comment;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Comment failed to create', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal menambahkan komentar.', $e->getCode() ?: 500);
         }
     }
 
-    public function removeComment(int $blogId): void
+    public function removeComment(int $commentId): void
     {
         try {
-            $blog = $this->findBlogOrFail($blogId);
-            $user = $this->getUser();
-            $comment = $this->commentRepo->findByBlogAndUser($blog->id, $user->id);
-            if (!$comment) {
-                throw new Exception('Comment not found', 404);
-            }
-            Gate::authorize('delete', $comment);
+            $comment = $this->commentRepo->find($commentId);
+            $this->isAuthorized('delete', $comment);
             $this->commentRepo->delete($comment);
         } catch (Exception $e) {
-            throw new Exception($e->getMessage() ?: 'Comment failed to delete', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal menghapus komentar.', $e->getCode() ?: 500);
         }
     }
 
     public function addLike(int $blogId): void
     {
         try {
-            $blog = $this->findBlogOrFail($blogId);
+            $blog = $this->blogRepo->getById($blogId);
             $user = $this->getUser();
             if ($this->likeRepo->exist($user, $blog)) {
-                throw new Exception('You have already liked this blog', 400);
+                throw new Exception('Anda sudah menyukai blog ini', 400);
             };
             DB::beginTransaction();
             $this->likeRepo->create($user, $blog);
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Failed to like blog', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal menyukai blog.', $e->getCode() ?: 500);
         }
     }
 
     public function removeLike(int $blogId): void
     {
         try {
-            $blog = $this->findBlogOrFail($blogId);
+            $blog = $this->blogRepo->getById($blogId);
 
             $user = $this->getUser();
             if (!$this->likeRepo->exist($user, $blog)) {
-                throw new Exception('You have not liked this blog', 400);
+                throw new Exception('Anda belum menyukai blog ini.', 400);
             }
             DB::beginTransaction();
             $this->likeRepo->delete($user, $blog);
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Failed to unlike this blog', $e->getCode() ?: 500);
+            throw new Exception($e->getMessage() ?: 'Gagal menghapus like', $e->getCode() ?: 500);
         }
     }
 }

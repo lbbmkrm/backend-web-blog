@@ -41,15 +41,37 @@ class AuthService
     public function register(array $requestData): array
     {
         try {
+            if ($this->authRepo->existUsername($requestData['username'])) {
+                throw new Exception('username sudah terdaftar', 409);
+            }
+            if ($this->authRepo->existEmail($requestData['email'])) {
+                throw new Exception('email sudah terdaftar', 409);
+            }
+            $data = [
+                'username' => $requestData['username'],
+                'email' => $requestData['email'],
+                'password' => bcrypt($requestData['password']),
+            ];
             DB::beginTransaction();
-            $user = $this->authRepo->register($requestData);
+            $user = $this->authRepo->register($data);
+
+            $student = $this->authRepo->getVerifiedStudent($requestData['student_number']);
+            $profileData = [
+                'user_id' => $user->id,
+                'name' => $student->name,
+                'student_number' => $student->student_id_number,
+                'university' => $student->university,
+                'faculty' => $student->faculty,
+                'study_program' => $student->study_program,
+                'batch' => $student->batch,
+            ];
+            $this->authRepo->createProfileUser($profileData);
             $token = $user->createToken('authentication_token')->plainTextToken;
             DB::commit();
-            $newUser = ['user' => $user, 'token' => $token];
-            return $newUser;
+            return ['user' => $user, 'token' => $token];
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Register failed', $e->getCode() ?:  500);
+            throw new Exception($e->getMessage() ?: 'Gagal registrasi', $e->getCode() ?:  500);
         }
     }
 
@@ -103,10 +125,10 @@ class AuthService
         }
     }
 
-    public function checkStudentNumber(int $studentNumber): bool
+    public function checkStudentNumber(string $studentNumber): bool
     {
         try {
-            $existed = $this->authRepo->verifiedStudent($studentNumber);
+            $existed = $this->authRepo->existsStudent($studentNumber);
             return $existed;
         } catch (Exception $e) {
             throw new Exception('failed check student number', 500);
