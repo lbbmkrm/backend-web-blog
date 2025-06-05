@@ -2,20 +2,23 @@
 
 namespace App\Services;
 
+use App\Notifications\BlogLiked;
 use Exception;
 use App\Models\Blog;
 use App\Models\User;
 use App\Models\Comment;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Notifications\BlogCommented;
 use App\Repositories\BlogRepository;
 use App\Repositories\LikeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Repositories\CommentRepository;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class BlogService
 {
@@ -149,6 +152,20 @@ class BlogService
             $comment = $this->commentRepo->create($commentData);
             DB::commit();
 
+            if ($blog->user_id !== $user->id) {
+                try {
+                    $blog->user->notify(new BlogCommented($comment, $blog, $user));
+                } catch (Exception $e) {
+                    Log::error('Failed to send notification', [
+                        'blog_id' => $blog->id,
+                        'user_id' => $user->id,
+                        'commenter_id' => $user->id,
+                        'comment_id' => $comment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
             return $comment;
         } catch (Exception $e) {
             DB::rollBack();
@@ -178,6 +195,17 @@ class BlogService
             DB::beginTransaction();
             $this->likeRepo->create($user, $blog);
             DB::commit();
+            if ($blog->user_id !== $user->id) {
+                try {
+                    $blog->user->notify(new BlogLiked($blog, $user));
+                } catch (Exception $e) {
+                    Log::error('Gagal mengirim notifikasi', [
+                        'blog_id' => $blog->id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception($e->getMessage() ?: 'Gagal menyukai blog.', $e->getCode() ?: 500);

@@ -5,6 +5,7 @@ namespace App\Services;
 use Exception;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\UserFollowed;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -63,6 +64,7 @@ class UserService
             DB::beginTransaction();
             $updatedUser = $this->userRepo->update($user, $data);
             DB::commit();
+
             return $updatedUser;
         } catch (Exception $e) {
             DB::rollBack();
@@ -84,6 +86,7 @@ class UserService
             DB::beginTransaction();
             $this->followRepo->create($currentUser, $user);
             DB::commit();
+            $user->notify(new UserFollowed($currentUser, $user));
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception('Following failed', 500);

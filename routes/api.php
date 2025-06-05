@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\LogRequestMiddleware;
 use Illuminate\Http\Request;
@@ -68,6 +69,12 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             Route::get('/bookmarks', 'index');
             Route::post('/bookmarks', 'store');
             Route::delete('/bookmarks/{id}', 'destroy');
+        });
+
+        Route::controller(NotificationController::class)->group(function () {
+            Route::get('/notifications', 'index');
+            Route::patch('/notifications/{id}', 'markAsRead');
+            Route::patch('/notifications', 'markAllAsRead');
         });
     });
 });
