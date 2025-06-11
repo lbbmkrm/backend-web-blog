@@ -36,6 +36,8 @@ class StoreBlogRequest extends FormRequest
             'content' => 'required|string',
             'description' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:255|distinct'
         ];
     }
 }

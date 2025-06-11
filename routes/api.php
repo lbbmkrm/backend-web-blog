@@ -5,6 +5,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\LogRequestMiddleware;
 use Illuminate\Http\Request;
@@ -35,6 +36,13 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
         Route::get('/categories/{id}/blogs', 'blogs');
     });
 
+    Route::controller(TagController::class)->group(function () {
+        Route::get('/tags', 'index');
+        Route::get('/tags/{id}', 'show');
+        Route::post('/tags',  'store')->middleware('auth:sanctum');
+        Route::delete('/tags/{id}',  'destroy')->middleware('auth:sanctum');
+    });
+
     Route::middleware('auth:sanctum')->group(function () {
         //user
         Route::controller(UserController::class)->group(function () {
@@ -43,7 +51,7 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             Route::get('/users/{id}', 'show');
             Route::patch('/users/{id}', 'update');
             Route::post('/users/{id}/follow', 'follow');
-            Route::delete('/users/{id}/follow', 'unfollow');
+            Route::delete('/users/{id}/unfollow', 'unfollow');
             Route::get('/users/{id}/followers', 'followers');
             Route::get('/users/{id}/following', 'following');
             Route::get('/users/{id}/likes', 'likes');
@@ -64,6 +72,7 @@ Route::middleware(LogRequestMiddleware::class)->group(function () {
             Route::post('/blogs/{id}/likes', 'like');
             Route::delete('/blogs/{id}/likes', 'unlike');
         });
+
 
         Route::controller(BookmarkController::class)->group(function () {
             Route::get('/bookmarks', 'index');

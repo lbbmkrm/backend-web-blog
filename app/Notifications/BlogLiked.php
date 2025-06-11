@@ -75,7 +75,7 @@ class BlogLiked extends Notification
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.' . $this->blog->user_id),
+            new PrivateChannel('App.Models.User.' . $this->blog->user_id),
         ];
     }
 }

@@ -28,7 +28,7 @@ class BlogsResource extends JsonResource
             'author' => new UserSimpleResource($this->whenLoaded('user')),
             'category' => new CategorySimpleResource($this->whenLoaded('category')),
             'likeCount' => $this->likes->count(),
-            'likesBy' => $this->likes()->where('likes.blog_id', $this->id)->select('users.id', 'users.username')->get()
+            'isLiked' => $this->isLiked()
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Notifications\BlogLiked;
+use App\Repositories\TagRepository;
 use Exception;
 use App\Models\Blog;
 use App\Models\User;
@@ -20,18 +21,26 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Auth\Access\AuthorizationException;
 
+use function PHPUnit\Framework\isNull;
+
 class BlogService
 {
     protected BlogRepository $blogRepo;
     protected CommentRepository $commentRepo;
     protected LikeRepository $likeRepo;
+    protected TagRepository $tagRepo;
 
 
-    public function __construct(BlogRepository $blog, CommentRepository $comment, LikeRepository $like)
-    {
+    public function __construct(
+        BlogRepository $blog,
+        CommentRepository $comment,
+        LikeRepository $like,
+        TagRepository $tagRepository
+    ) {
         $this->blogRepo = $blog;
         $this->commentRepo = $comment;
         $this->likeRepo = $like;
+        $this->tagRepo = $tagRepository;
     }
 
     private function getUser(): ?User
@@ -67,11 +76,16 @@ class BlogService
         try {
             DB::beginTransaction();
             $user = $this->getUser();
+
             $slug = Str::slug($requestData['title']);
-            $existingSlug = $this->blogRepo->model->where('slug', $slug)->exists();
-            if ($existingSlug) {
-                $slug = $slug . '-' . $user->id;
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while ($this->blogRepo->model->where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
             }
+
             $blogData = [
                 'user_id' => $user->id,
                 'category_id' => $requestData['category_id'],
@@ -79,50 +93,113 @@ class BlogService
                 'content' => $requestData['content'],
                 'description' => $requestData['description'] ?? null,
                 'slug' => $slug,
-                'created_at' => now()
             ];
 
-            if (isset($requestData['thumbnail'])) {
+            if (isset($requestData['thumbnail']) && $requestData['thumbnail'] instanceof \Illuminate\Http\UploadedFile) {
                 $blogData['thumbnail'] = $requestData['thumbnail']->store('thumbnails', 'public');
             } else {
                 $blogData['thumbnail'] = null;
             }
 
             $blog = $this->blogRepo->create($blogData);
+
+            if (isset($requestData['tags']) && !empty($requestData['tags'])) {
+                $tagIds = [];
+                foreach ($requestData['tags'] as $tagName) {
+                    $tag = $this->tagRepo->getOrCreate(['name' => $tagName], ['user_id' => $user->id]);
+                    $tagIds[] = $tag->id;
+                }
+                $blog->tags()->attach($tagIds, ['created_at' => now()]);
+            }
+
             DB::commit();
-            return $blog;
+            return $blog->load('category');
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Gagal membuat blog.', $e->getCode() ?: 500);
+            throw new Exception('Gagal membuat blog: ' . $e->getMessage());
         }
     }
 
-    public function updateBlog(Blog $blog, array $data, $imgPath): ?Blog
+
+    public function updateBlog(Blog $blog, array $requestData, $imgPath = null): ?Blog
     {
         try {
             $this->isAuthorized('update', $blog);
             DB::beginTransaction();
-            if ($imgPath && $blog->thumbnail) {
-                Storage::disk('public')->delete($blog->thumbnail);
-                $data['thumbnail'] = $imgPath->store('thumbnails', 'public');
+
+            $thumbnailPath = $blog->thumbnail;
+
+            if ($imgPath && $imgPath instanceof \Illuminate\Http\UploadedFile) {
+                if ($blog->thumbnail) {
+                    Storage::disk('public')->delete($blog->thumbnail);
+                }
+                $thumbnailPath = $imgPath->store('thumbnails', 'public');
+            } elseif (isset($requestData['remove_thumbnail']) && $requestData['remove_thumbnail']) {
+                if ($blog->thumbnail) {
+                    Storage::disk('public')->delete($blog->thumbnail);
+                }
+                $thumbnailPath = null;
+            }
+
+            $slug = $blog->slug;
+            if ($requestData['title'] !== $blog->title) {
+                $newSlug = Str::slug($requestData['title']);
+                $originalSlug = $newSlug;
+                $counter = 1;
+
+                while ($this->blogRepo->model->where('slug', $newSlug)
+                    ->where('id', '!=', $blog->id)
+                    ->exists()
+                ) {
+                    $newSlug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
+                $slug = $newSlug;
             }
 
             $blogData = [
-                'category_id' => $data['category_id'],
-                'title' => $data['title'],
-                'content' => $data['content'],
-                'description' => $data['description'],
-                'thumbnail' => $imgPath ?? $blog->thumbnail
+                'category_id' => $requestData['category_id'],
+                'title' => $requestData['title'],
+                'content' => $requestData['content'],
+                'description' => $requestData['description'] ?? null,
+                'slug' => $slug,
+                'thumbnail' => $thumbnailPath
             ];
+
             $updatedBlog = $this->blogRepo->update($blog, $blogData);
-            $updatedBlog->load(['category']);
+
+            if (isset($requestData['tags'])) {
+                if (empty($requestData['tags'])) {
+                    $updatedBlog->tags()->detach();
+                } else {
+                    $tagIds = [];
+                    $user = $this->getUser();
+
+                    foreach ($requestData['tags'] as $tagName) {
+                        $tag = $this->tagRepo->getOrCreate(
+                            ['name' => $tagName],
+                            ['user_id' => $user->id]
+                        );
+                        $tagIds[] = $tag->id;
+                    }
+
+                    $updatedBlog->tags()->sync($tagIds);
+                }
+            }
+
             DB::commit();
-            return $updatedBlog;
+            return $updatedBlog->load(['category', 'tags']);
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage() ?: 'Gagal memperbarui blog.', $e->getCode() ?: 500);
+
+            if ($imgPath && isset($thumbnailPath) && $thumbnailPath !== $blog->thumbnail) {
+                Storage::disk('public')->delete($thumbnailPath);
+            }
+
+            throw new Exception('Gagal memperbarui blog: ' . $e->getMessage());
         }
     }
+
     public function removeBlog(int $blogId): void
     {
         try {

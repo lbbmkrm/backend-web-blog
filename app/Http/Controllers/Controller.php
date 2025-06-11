@@ -15,11 +15,14 @@ abstract class Controller
             'data' => $data
         ], $code);
     }
-    protected function failedResponse(Exception $exception): JsonResponse
+    protected function failedResponse(Exception $e): JsonResponse
     {
+        $code = $e->getCode();
+        if ($code < 100 || $code >= 600) {
+            $code = 500;
+        }
         return response()->json([
-            'success' => false,
-            'message' => $exception->getMessage()
-        ], $exception->getCode());
+            'message' => $e->getMessage()
+        ], $code);
     }
 }

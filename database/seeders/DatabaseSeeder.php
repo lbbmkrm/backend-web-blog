@@ -18,7 +18,10 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             BlogSeeder::class,
             CommentSeeder::class,
-            LikeSeeder::class
+            LikeSeeder::class,
+            BookmarkSeeder::class,
+            TagSeeder::class,
+            BlogTagSeeder::class
         ]);
     }
 }

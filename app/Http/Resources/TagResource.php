@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Resources\Blogs;
+namespace App\Http\Resources;
 
+use App\Http\Resources\Blogs\BlogSimpleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class BlogSimpleResource extends JsonResource
+class TagResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,8 +17,9 @@ class BlogSimpleResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'slug' => $this->slug
+            'name' => $this->name,
+            'createdAt' => $this->created_at,
+            'blogs' => BlogSimpleResource::collection($this->whenLoaded('blogs'))
         ];
     }
 }

@@ -105,4 +105,9 @@ class User extends Authenticatable
             relatedPivotKey: 'follower_id'
         );
     }
+
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class, 'user_id', 'id');
+    }
 }

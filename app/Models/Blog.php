@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @mixin IdeHelperBlog
@@ -20,6 +22,15 @@ class Blog extends Model
         'description',
         'thumbnail'
     ];
+
+    public function isLiked(): bool
+    {
+        $user = Auth::guard('sanctum')->user();
+        if (!$user) {
+            return false;
+        }
+        return $this->likes()->where('user_id', $user->id)->exists();
+    }
 
     public function category(): BelongsTo
     {
@@ -44,5 +55,15 @@ class Blog extends Model
     public function bookmarks(): HasMany
     {
         return $this->hasMany(Bookmark::class, 'blog_id', 'id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Tag::class,
+            'blog_tags',
+            'blog_id',
+            'tag_id'
+        )->using(BlogTag::class);
     }
 }
