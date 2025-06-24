@@ -20,11 +20,11 @@ class BlogRepository
 
     public function getAll(): ?Collection
     {
-        return $this->model->with(['user', 'category'])
+        return $this->model->with(['user', 'category', 'tags'])
             ->orderBy('created_at', 'desc')->get();
     }
 
-    public function getById(int $id, $relation = []): ?Blog
+    public function getById(int $id, $relation = ['user', 'category', 'tags']): ?Blog
     {
         try {
             return $this->model->with($relation)->where('id', $id)->firstOrFail();
@@ -52,7 +52,7 @@ class BlogRepository
             $blog->update($data);
             return $blog;
         } catch (MassAssignmentException $e) {
-            throw new Exception('Data yang dikirim tidak valid.', 422);
+            throw new Exception($e->getMessage(), 422);
         } catch (QueryException $e) {
             throw new Exception('Terjadi kesalahan pada database saat memperbarui blog.', 500);
         } catch (Exception $e) {

@@ -6,6 +6,7 @@ use App\Http\Resources\BlogImageResource;
 use App\Http\Resources\CommentResource;
 use Illuminate\Http\Request;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\TagResource;
 use App\Http\Resources\User\UserSimpleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,8 +24,8 @@ class BlogResource extends JsonResource
             'title' => $this->title,
             'author' => new UserSimpleResource($this->whenLoaded('user')),
             'category' => new CategoryResource($this->whenLoaded('category')),
+            'tags' => TagResource::collection($this->whenLoaded('tags')),
             'content' => $this->content,
-            'description' => $this->description,
             'thumbnail' => $this->thumbnail,
             'slug' => $this->slug,
             'createdAt' => $this->created_at,

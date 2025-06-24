@@ -34,7 +34,6 @@ class StoreBlogRequest extends FormRequest
             'title' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'content' => 'required|string',
-            'description' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:255|distinct'

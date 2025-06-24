@@ -55,6 +55,26 @@ class BlogService
             throw new Exception('Unauthorized!', 403);
         }
     }
+    private function generateExcerpt(string $content, int $length = 150): string
+    {
+        $plainText = strip_tags($content);
+        $plainText = trim(preg_replace('/\s+/', ' ', $plainText));
+
+        if (strlen($plainText) <= $length) {
+            return $plainText;
+        }
+
+        $excerpt = substr($plainText, 0, $length);
+
+        if (substr($plainText, $length, 1) !== ' ') {
+            $lastSpace = strrpos($excerpt, ' ');
+            if ($lastSpace !== false) {
+                $excerpt = substr($excerpt, 0, $lastSpace);
+            }
+        }
+
+        return $excerpt . '...';
+    }
 
     public function getAllBlogs(): ?Collection
     {
@@ -64,7 +84,7 @@ class BlogService
     public function getBlogDetail(int $id): ?Blog
     {
         try {
-            $blog = $this->blogRepo->getById($id, ['category', 'user', 'comments']);
+            $blog = $this->blogRepo->getById($id, ['category', 'user', 'comments', 'tags']);
             return $blog;
         } catch (Exception $e) {
             throw new Exception($e->getMessage() ?: 'Gagal mengambil detail blog.', $e->getCode() ?: 500);
@@ -91,7 +111,7 @@ class BlogService
                 'category_id' => $requestData['category_id'],
                 'title' => $requestData['title'],
                 'content' => $requestData['content'],
-                'description' => $requestData['description'] ?? null,
+                'description' => $this->generateExcerpt($requestData['content']) ?? '',
                 'slug' => $slug,
             ];
 
@@ -161,7 +181,7 @@ class BlogService
                 'category_id' => $requestData['category_id'],
                 'title' => $requestData['title'],
                 'content' => $requestData['content'],
-                'description' => $requestData['description'] ?? null,
+                'excerpt' => $this->generateExcerpt($requestData['content']) ?? null,
                 'slug' => $slug,
                 'thumbnail' => $thumbnailPath
             ];

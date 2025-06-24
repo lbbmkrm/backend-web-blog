@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('category_id');
             $table->string('title');
             $table->text('content');
-            $table->text('description')->nullable();
+            $table->text('excerpt')->nullable();
             $table->string('slug')->unique();
             $table->string('thumbnail')->nullable();
             $table->timestamps();

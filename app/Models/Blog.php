@@ -19,8 +19,9 @@ class Blog extends Model
         'title',
         'content',
         'slug',
-        'description',
-        'thumbnail'
+        'excerpt',
+        'thumbnail',
+        'tags'
     ];
 
     public function isLiked(): bool
