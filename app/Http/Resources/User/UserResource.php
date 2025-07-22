@@ -20,7 +20,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'detail' => new ProfileResource($this->profile),
             'followers' => FollowerResource::collection($this->whenLoaded('followers')),
-            'following' => FollowerResource::collection($this->whenLoaded('following'))
+            'following' => FollowerResource::collection($this->whenLoaded('following')),
         ];
     }
 }

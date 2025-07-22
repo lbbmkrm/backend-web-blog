@@ -46,10 +46,19 @@ class UserController extends Controller
 
     public function update(int $id, UserUpdateRequest $request): JsonResponse
     {
-        $requestValid = $request->validated();
+
+        $bio = $request['bio'] ?: null;
+        $avatar = $request['avatar'] ?: null;
+        $phone = $request['phone'] ?: null;
+        $data = [
+            'bio' => $bio,
+            'avatar' => $avatar,
+            'phone' => $phone
+        ];
+        $request->validated();
         try {
             $user = $this->userService->getUser($id);
-            $updatedUser = $this->userService->updateUser($user, $requestValid);
+            $updatedUser = $this->userService->updateUser($user, $data);
             return $this->successResponse(
                 'User updated successfully',
                 new UserResource($updatedUser)
